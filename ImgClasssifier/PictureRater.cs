@@ -160,6 +160,18 @@ public partial class PictureRater
         return ratedImages;
     }
 
+    public void ResetSortOrderInLogfile()
+    {
+        string logFile = _configuration["logFile"]!;
+        var ratedImages = File.ReadAllLines(logFile).
+            Select(l => (UnratedFile: l.Split('\t')[0], RatedFile: l.Split('\t')[1])).
+            OrderBy(e => e.RatedFile).ToList();
+
+        using StreamWriter writer = new StreamWriter(logFile);
+        foreach (var e in ratedImages)
+            writer.WriteLine($"{e.UnratedFile}\t{e.RatedFile}");
+    }
+
     public event EventHandler<FileMovedUnregisteredFileEventEventArgs>? MovedUnregisteredRatedFile;
     private void MoveUnregisteredRatedFiles()
     {
@@ -180,21 +192,6 @@ public partial class PictureRater
             }
         }
     }
-
-
-    //private void CheckRegisteredRatedFiles()
-    //{
-    //    HashSet<string> ratedImages = GetRatedImagesFilenames(originalFile: false);
-
-    //    string? targetBasePath = _configuration["targetBasePath"];
-
-    //    List<string> filesNotFound = new();
-    //    foreach (string image in ratedImages)
-    //    {
-    //        if (!Path.Exists(Path.Combine(targetBasePath, image)))
-    //            filesNotFound.Add(image);
-    //    }
-    //}
 
 
     private HashSet<string> GetRatedImagesFilenames(bool originalFile)
@@ -225,8 +222,6 @@ public partial class PictureRater
         _currentFile = _images[_currentIndex];
 
         ProceededToNextFile?.Invoke(this, EventArgs.Empty);
-        //Text = $"{currentFile}-[{currentIndex + 1}/{images.Count}]";
-        //pictureBox1.ImageLocation = currentFile;
     }
 
     public void SaveCurrentFile(int rating)

@@ -37,6 +37,7 @@
             btnSkip = new Button();
             txtLog = new TextBox();
             chkRotateRight = new CheckBox();
+            btnResetOrderInLogFile = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             SuspendLayout();
@@ -112,11 +113,22 @@
             chkRotateRight.UseVisualStyleBackColor = true;
             chkRotateRight.CheckedChanged += chkRotateRight_CheckedChanged;
             // 
+            // btnResetOrderInLogFile
+            // 
+            btnResetOrderInLogFile.Location = new Point(871, 83);
+            btnResetOrderInLogFile.Name = "btnResetOrderInLogFile";
+            btnResetOrderInLogFile.Size = new Size(132, 23);
+            btnResetOrderInLogFile.TabIndex = 6;
+            btnResetOrderInLogFile.Text = "Reset order in log file";
+            btnResetOrderInLogFile.UseVisualStyleBackColor = true;
+            btnResetOrderInLogFile.Click += btnResetOrderInLogFile_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1015, 805);
+            Controls.Add(btnResetOrderInLogFile);
             Controls.Add(chkRotateRight);
             Controls.Add(txtLog);
             Controls.Add(btnSave);
@@ -142,5 +154,6 @@
         private Button btnSkip;
         private TextBox txtLog;
         private CheckBox chkRotateRight;
+        private Button btnResetOrderInLogFile;
     }
 }
