@@ -64,6 +64,8 @@ namespace ImgClasssifier
 
         private void LoadTransformedImage()
         {
+            if (_rater.CurrentFile == "") return;
+
             using FileStream stream = new FileStream(_rater.CurrentFile, FileMode.Open, FileAccess.Read);
             pictureBox1.Image = Image.FromStream(stream);
             if (chkRotateRight.Checked) pictureBox1.Image.RotateFlip(RotateFlipType.Rotate90FlipNone);
