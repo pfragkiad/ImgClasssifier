@@ -1,10 +1,4 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Configuration.Internal;
-using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 
 namespace ImgClasssifier;
 
@@ -115,5 +109,11 @@ public partial class Form1 : Form
     {
         _rater.ResetSortOrderInLogfile();
         MessageBox.Show("Reset order complete!");
+    }
+
+    private void btnBrowseRated_Click(object sender, EventArgs e)
+    {
+        var form = Program.Provider.GetRequiredService<BrowserForm>();
+        form.ShowDialog();
     }
 }

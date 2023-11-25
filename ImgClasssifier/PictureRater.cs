@@ -38,6 +38,11 @@ public partial class PictureRater
 
     string? _sourceBasePath, _targetBasePath, _logFile, _unregisteredPath;
 
+    public List<string> GetRatedImages()
+    {
+        return GetRatedImagesFilenames(false).Select(f => Path.Combine(_targetBasePath,f)).ToList();
+    }
+
 
 
     /*
@@ -163,6 +168,9 @@ public partial class PictureRater
     public void ResetSortOrderInLogfile()
     {
         string logFile = _configuration["logFile"]!;
+        //store backup file
+        File.Copy(logFile, Path.Combine(Path.GetDirectoryName(logFile),Path.GetFileName(logFile) + ".bak"),true);
+
         var ratedImages = File.ReadAllLines(logFile).
             Select(l => (UnratedFile: l.Split('\t')[0], RatedFile: l.Split('\t')[1])).
             OrderBy(e => e.RatedFile).ToList();

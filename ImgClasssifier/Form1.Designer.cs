@@ -38,6 +38,7 @@
             txtLog = new TextBox();
             chkRotateRight = new CheckBox();
             btnResetOrderInLogFile = new Button();
+            btnBrowseRated = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             SuspendLayout();
@@ -123,11 +124,22 @@
             btnResetOrderInLogFile.UseVisualStyleBackColor = true;
             btnResetOrderInLogFile.Click += btnResetOrderInLogFile_Click;
             // 
+            // btnBrowseRated
+            // 
+            btnBrowseRated.Location = new Point(871, 54);
+            btnBrowseRated.Name = "btnBrowseRated";
+            btnBrowseRated.Size = new Size(132, 23);
+            btnBrowseRated.TabIndex = 7;
+            btnBrowseRated.Text = "Browse Rated";
+            btnBrowseRated.UseVisualStyleBackColor = true;
+            btnBrowseRated.Click += btnBrowseRated_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1015, 805);
+            Controls.Add(btnBrowseRated);
             Controls.Add(btnResetOrderInLogFile);
             Controls.Add(chkRotateRight);
             Controls.Add(txtLog);
@@ -155,5 +167,6 @@
         private TextBox txtLog;
         private CheckBox chkRotateRight;
         private Button btnResetOrderInLogFile;
+        private Button btnBrowseRated;
     }
 }

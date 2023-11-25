@@ -19,6 +19,7 @@ internal static class Program
             {
                 services
                 .AddSingleton<Form1>()
+                .AddTransient<BrowserForm>()
                 .AddSingleton<PictureRater>()
                 ;
             })
