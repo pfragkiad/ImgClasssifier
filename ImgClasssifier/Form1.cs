@@ -1,10 +1,11 @@
+using ImgClasssifier.Rating;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ImgClasssifier;
 
 //TODO: Remove rated photo.
 //TODO: Change rating.
-//TODO: Reclassify (change all ratings)
+//TODO: Reclassify (change all ratings) -> 
 //TODO: Reclassify (compare mode).
 
 public partial class Form1 : Form

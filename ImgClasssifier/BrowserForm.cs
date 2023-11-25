@@ -1,6 +1,10 @@
 ﻿
+using ImgClasssifier.ControlExtensions;
+using ImgClasssifier.Rating;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace ImgClasssifier;
@@ -14,10 +18,53 @@ public partial class BrowserForm : Form
         InitializeComponent();
         _rater = rater;
 
+        listView1.EnableDoubleBuffering();
+        _listDragDropper = new ListViewListItemDragDropper(listView1);
+        _listDragDropper.ItemMoved += ListDragDropper_ItemMoved;
     }
 
+    private void ListDragDropper_ItemMoved(object? sender, ListItemMovedEventArgs e)
+    {
+        var currentRating = _rater.GetRatingIndex(e.Item!.Text);
+        var previousRating = e.Previous is not null? _rater.GetRatingIndex(e.Previous!.Text) : null;
+        var nextRating = e.Next is not null ? _rater.GetRatingIndex(e.Next!.Text) : null;
+
+        if(previousRating is not null && nextRating is not null &&
+            previousRating >= nextRating)
+        {
+            MessageBox.Show("Previous and next are not in correct order.");
+            return;
+        }
+
+        bool alreadySorted = true;
+        if(previousRating is not null) alreadySorted &= currentRating > previousRating;
+        if (nextRating is not null) alreadySorted &= currentRating < nextRating;
+
+       //lblReport.Text = $"Current: {e.Item.Text}, Previous: {e.Previous?.Text ?? "<Null>"}, Next: {e.Next?.Text ?? "<Null>"}";
+        lblReport.Text = $"Current: {currentRating}, Previous: {previousRating}, Next: {nextRating} ({(alreadySorted? "SORTED" : "NOT SORTED")})";
+
+        //unsorted scenarios
+
+        //3_3 | (3_5) | 3_4  ..  3_6 .. (same rating, index change)
+        // every image prior to 3
+        var affectedRatedImages = _rater
+            .GetRatedImages()
+            .Select(img => _rater.GetRatingIndex(img))
+            .Where(r => r is not null && r.Rating ==  );
+
+        //lblReport.Text = $"Current: {e.Item.Text}, Previous: {e.Previous?.Text ?? "<Null>"}, Next: {e.Next?.Text ?? "<Null>"}";
+    }
+
+    enum ResortScenario
+    {
+        SameRating
+    }
+
+    ListViewListItemDragDropper? _listDragDropper;
 
 
+    //TODO: Cache thumbnails
+    //TODO: Reload a single photo (right-click)
     private void AddThumbnails()
     {
         if (imageList1.Images.Count > 0)
@@ -31,10 +78,14 @@ public partial class BrowserForm : Form
         progressBar1.Maximum = imagesPaths.Count;
         progressBar1.Visible = true;
 
+        listView1.SuspendLayout();
+
         int i = 0;
         foreach (var ratedFilename in imagesPaths)
         {
             using FileStream stream = new FileStream(ratedFilename, FileMode.Open, FileAccess.Read);
+            // if (ratedFilename.Contains("006_0010.jpg")) Debugger.Break();
+
             var image = Image.FromStream(stream);
 
             if(image.Width>image.Height)
@@ -60,7 +111,7 @@ public partial class BrowserForm : Form
         }
 
         progressBar1.Visible = false;
-
+        listView1.ResumeLayout();
 
 
     }
@@ -88,13 +139,13 @@ public partial class BrowserForm : Form
         if (nPercentH < nPercentW)
         {
             nPercent = nPercentH;
-            destX = System.Convert.ToInt16((newWidth -
+            destX = Convert.ToInt16((newWidth -
                       (sourceWidth * nPercent)) / 2);
         }
         else
         {
             nPercent = nPercentW;
-            destY = System.Convert.ToInt16((newHeight -
+            destY = Convert.ToInt16((newHeight -
                       (sourceHeight * nPercent)) / 2);
         }
 
@@ -102,19 +153,16 @@ public partial class BrowserForm : Form
         int destHeight = (int)(sourceHeight * nPercent);
 
 
-        Bitmap bmPhoto = new Bitmap(newWidth, newHeight,
-                      PixelFormat.Format24bppRgb);
+        Bitmap bmPhoto = new Bitmap(newWidth, newHeight, PixelFormat.Format24bppRgb);
 
-        bmPhoto.SetResolution(imgPhoto.HorizontalResolution,
-                     imgPhoto.VerticalResolution);
+        bmPhoto.SetResolution(imgPhoto.HorizontalResolution, imgPhoto.VerticalResolution);
 
-        
+
         Graphics grPhoto = Graphics.FromImage(bmPhoto);
-        
+
         grPhoto.Clear(listView1.BackColor);
 
-        grPhoto.InterpolationMode =
-            System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+        grPhoto.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
         grPhoto.DrawImage(imgPhoto,
             new Rectangle(destX, destY, destWidth, destHeight),
@@ -126,46 +174,6 @@ public partial class BrowserForm : Form
         return bmPhoto;
     }
 
-    static Image ScaleImage(Image bmp, int maxWidth, int maxHeight)
-    {
-        var ratioX = (double)maxWidth / bmp.Width;
-        var ratioY = (double)maxHeight / bmp.Height;
-        var ratio = Math.Min(ratioX, ratioY);
-
-        var newWidth = (int)(bmp.Width * ratio);
-        var newHeight = (int)(bmp.Height * ratio);
-
-        var newImage = new Bitmap(newWidth, newHeight);
-
-        using (var graphics = Graphics.FromImage(newImage))
-            graphics.DrawImage(bmp, 0, 0, newWidth, newHeight);
-
-
-        return newImage;
-    }
-
-    public static Bitmap ResizeImage(Image image, int width, int height)
-    {
-        var destRect = new Rectangle(0, 0, width, height);
-        var destImage = new Bitmap(width, height);
-
-        destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
-
-        using (var graphics = Graphics.FromImage(destImage))
-        {
-            graphics.CompositingMode = CompositingMode.SourceCopy;
-            graphics.CompositingQuality = CompositingQuality.HighQuality;
-            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            graphics.SmoothingMode = SmoothingMode.HighQuality;
-            graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-            using var wrapMode = new ImageAttributes();
-            wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-            graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
-        }
-
-        return destImage;
-    }
 
     private void button1_Click(object sender, EventArgs e)
     {
@@ -176,5 +184,17 @@ public partial class BrowserForm : Form
         Application.UseWaitCursor = false;
 
         Cursor.Current = Cursors.Default;
+    }
+
+    private void listView1_KeyDown(object sender, KeyEventArgs e)
+    {
+        //if(e.KeyCode ==Keys.Right )
+        //{
+        //    if ((listView1.SelectedItems[0] as ListViewItem)?.FindNearestItem(SearchDirectionHint.Right) is null)
+        //    {
+        //        listView1.SelectedItems.Clear();
+                
+        //    }
+        //}
     }
 }

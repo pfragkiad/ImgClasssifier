@@ -1,3 +1,4 @@
+using ImgClasssifier.Rating;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

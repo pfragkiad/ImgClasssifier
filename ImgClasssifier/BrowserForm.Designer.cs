@@ -34,6 +34,7 @@
             imageList1 = new ImageList(components);
             progressBar1 = new ProgressBar();
             button1 = new Button();
+            lblReport = new Label();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -52,10 +53,11 @@
             // 
             // splitContainer1.Panel2
             // 
+            splitContainer1.Panel2.Controls.Add(lblReport);
             splitContainer1.Panel2.Controls.Add(progressBar1);
             splitContainer1.Panel2.Controls.Add(button1);
-            splitContainer1.Size = new Size(800, 450);
-            splitContainer1.SplitterDistance = 382;
+            splitContainer1.Size = new Size(1154, 722);
+            splitContainer1.SplitterDistance = 810;
             splitContainer1.TabIndex = 1;
             // 
             // listView1
@@ -64,27 +66,29 @@
             listView1.LargeImageList = imageList1;
             listView1.Location = new Point(0, 0);
             listView1.Name = "listView1";
-            listView1.Size = new Size(382, 450);
+            listView1.Size = new Size(810, 722);
             listView1.TabIndex = 0;
             listView1.UseCompatibleStateImageBehavior = false;
+            listView1.KeyDown += listView1_KeyDown;
             // 
             // imageList1
             // 
             imageList1.ColorDepth = ColorDepth.Depth32Bit;
-            imageList1.ImageSize = new Size(64, 128);
+            imageList1.ImageSize = new Size(128, 256);
             imageList1.TransparentColor = Color.Transparent;
             // 
             // progressBar1
             // 
-            progressBar1.Location = new Point(28, 65);
+            progressBar1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            progressBar1.Location = new Point(15, 56);
             progressBar1.Name = "progressBar1";
-            progressBar1.Size = new Size(374, 23);
+            progressBar1.Size = new Size(302, 23);
             progressBar1.TabIndex = 1;
             progressBar1.Visible = false;
             // 
             // button1
             // 
-            button1.Location = new Point(198, 30);
+            button1.Location = new Point(15, 12);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
             button1.TabIndex = 0;
@@ -92,16 +96,26 @@
             button1.UseVisualStyleBackColor = true;
             button1.Click += button1_Click;
             // 
+            // lblReport
+            // 
+            lblReport.AutoSize = true;
+            lblReport.Location = new Point(15, 100);
+            lblReport.Name = "lblReport";
+            lblReport.Size = new Size(38, 15);
+            lblReport.TabIndex = 2;
+            lblReport.Text = "label1";
+            // 
             // BrowserForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(1154, 722);
             Controls.Add(splitContainer1);
             Name = "BrowserForm";
             Text = "BrowserForm";
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel2.ResumeLayout(false);
+            splitContainer1.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             ResumeLayout(false);
@@ -114,5 +128,6 @@
         private ImageList imageList1;
         private Button button1;
         private ProgressBar progressBar1;
+        private Label lblReport;
     }
 }

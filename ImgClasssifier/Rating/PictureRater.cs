@@ -1,27 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System.CodeDom;
 using System.Text.RegularExpressions;
 
-namespace ImgClasssifier;
-
-public class FileDeletedEventEventArgs(string removedFilename, string ratedFilename, bool success) : EventArgs
-{
-    public string RemovedFilename { get; } = removedFilename;
-    public string RatedFilename { get; } = ratedFilename;
-
-    public bool Success { get; } = success;
-}
-
-
-public class FileMoveFailedEventArgs(string unratedFilename, string reason) : EventArgs
-{
-    public string UnratedFilename { get; } = unratedFilename;
-    public string Reason { get; } = reason;
-}
-
-public class FileMovedUnregisteredFileEventEventArgs(string ratedFilename) : EventArgs
-{
-    public string RatedFilename { get; } = ratedFilename;
-}
+namespace ImgClasssifier.Rating;
 
 public partial class PictureRater
 {
@@ -33,16 +14,25 @@ public partial class PictureRater
     string _currentFile = "";
     public string CurrentFile { get => _currentFile; }
 
-    List<string> _images = new ();
+    List<string> _images = new();
     public int UnratedImagesCount { get => _images.Count; }
 
     string? _sourceBasePath, _targetBasePath, _logFile, _unregisteredPath;
 
     public List<string> GetRatedImages()
     {
-        return GetRatedImagesFilenames(false).Select(f => Path.Combine(_targetBasePath,f)).ToList();
+        return GetRatedImagesFilenames(false).Select(f => Path.Combine(_targetBasePath, f)).ToList();
     }
 
+    public RatingIndex? GetRatingIndex(string filename)
+    {
+        Match m = Regex.Match(filename, @"^(?<rating>\d{3})_(?<index>\d{4})\.");
+        if (!m.Success) return null;
+
+        return new RatingIndex(
+            rating: int.Parse(m.Groups["rating"].Value),
+            index: int.Parse(m.Groups["index"].Value));
+    }
 
 
     /*
@@ -65,14 +55,14 @@ public partial class PictureRater
     {
         _sourceBasePath = _configuration["sourceBasePath"] ?? throw new InvalidOperationException("Configure 'sourceBasePath' prior to any operation.");
         if (!Directory.Exists(_sourceBasePath)) throw new InvalidOperationException($"SourceBasePath: '{_sourceBasePath}' does not exist.");
-        _targetBasePath = _configuration["targetBasePath"] ?? Path.Combine(_sourceBasePath,"rated");
+        _targetBasePath = _configuration["targetBasePath"] ?? Path.Combine(_sourceBasePath, "rated");
         if (!Directory.Exists(_targetBasePath)) Directory.CreateDirectory(_targetBasePath);
-       
-        _logFile = _configuration["logFile"] ?? Path.Combine(_targetBasePath,"log.txt");
-        if (!Directory.Exists(Path.GetDirectoryName(_logFile))) 
+
+        _logFile = _configuration["logFile"] ?? Path.Combine(_targetBasePath, "log.txt");
+        if (!Directory.Exists(Path.GetDirectoryName(_logFile)))
             Directory.CreateDirectory(Path.GetDirectoryName(_logFile)!);
-        
-        _unregisteredPath = _configuration["unregisteredBasePath"] ?? Path.Combine(_targetBasePath,"unregistered");
+
+        _unregisteredPath = _configuration["unregisteredBasePath"] ?? Path.Combine(_targetBasePath, "unregistered");
         if (!Directory.Exists(_unregisteredPath)) Directory.CreateDirectory(_unregisteredPath);
 
     }
@@ -104,12 +94,12 @@ public partial class PictureRater
     {
         _currentIndex = -1;
         _currentFile = "";
-        ResetCompleted?.Invoke(this,EventArgs.Empty);
+        ResetCompleted?.Invoke(this, EventArgs.Empty);
     }
 
     private void LoadUnratedFiles()
     {
-        var exclusionsParentDirectories = _configuration.GetSection("exclusions").GetChildren().Select(c=> c.Value).ToList();
+        var exclusionsParentDirectories = _configuration.GetSection("exclusions").GetChildren().Select(c => c.Value).ToList();
 
         _images = Directory.GetFiles(_sourceBasePath!, "*.jpg", SearchOption.AllDirectories).Where(f =>
         {
@@ -118,8 +108,8 @@ public partial class PictureRater
             //ignore the rated images
             if (m.Success) return false;
 
-            
-            if(exclusionsParentDirectories.Contains( Path.GetFileName(Path.GetDirectoryName(f)) ) )
+
+            if (exclusionsParentDirectories.Contains(Path.GetFileName(Path.GetDirectoryName(f))))
                 return false;
 
 
@@ -137,7 +127,7 @@ public partial class PictureRater
 
         for (int i = _images.Count - 1; i >= 0; i--)
         {
-            string f= _images[i];
+            string f = _images[i];
             string fileName = Path.GetFileName(f);
             if (ratedImages.ContainsKey(fileName))
             {
@@ -146,9 +136,10 @@ public partial class PictureRater
                     File.Delete(f);
                     _images.RemoveAt(i);
 
-                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(fileName, ratedImages[fileName],true));
+                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(fileName, ratedImages[fileName], true));
                 }
-                catch {
+                catch
+                {
                     RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(f, ratedImages[fileName], false));
                 }
                 //txtLog.AppendText($"Removed {fileName}: exists as {ratedImages[fileName]}\r\n");
@@ -169,7 +160,7 @@ public partial class PictureRater
     {
         string logFile = _configuration["logFile"]!;
         //store backup file
-        File.Copy(logFile, Path.Combine(Path.GetDirectoryName(logFile),Path.GetFileName(logFile) + ".bak"),true);
+        File.Copy(logFile, Path.Combine(Path.GetDirectoryName(logFile), Path.GetFileName(logFile) + ".bak"), true);
 
         var ratedImages = File.ReadAllLines(logFile).
             Select(l => (UnratedFile: l.Split('\t')[0], RatedFile: l.Split('\t')[1])).
@@ -265,7 +256,8 @@ public partial class PictureRater
             _images.Remove(fileName);
             _currentIndex--;
         }
-        catch(Exception ex) { 
+        catch (Exception ex)
+        {
             MoveImageFailed?.Invoke(this, new FileMoveFailedEventArgs(fileName, ex.Message));
         }
     }
