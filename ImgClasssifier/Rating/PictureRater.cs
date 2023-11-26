@@ -55,6 +55,7 @@ public partial class PictureRater
     }
 
     string? _sourceBasePath, _targetBasePath, _logFile, _unregisteredPath;
+    public string? TargetBasePath { get => _targetBasePath; }
 
     private void CheckSettings()
     {
@@ -109,7 +110,7 @@ public partial class PictureRater
         GotoNextFile();
     }
 
- 
+
 
     private void LoadUnratedFiles()
     {
@@ -171,7 +172,7 @@ public partial class PictureRater
 
         string[] allRatedFiles = Directory
             .GetFiles(_targetBasePath!)
-            .Where(f=> IsImageFile(f))
+            .Where(f => IsImageFile(f))
             .ToArray();
 
         //List<string> filesToMove = new();
@@ -196,7 +197,7 @@ public partial class PictureRater
         GetLogfileLines()
             .ToDictionary(l => l.Split('\t')[0], l => l.Split('\t')[1]);
 
-    public List<string> GetRatedImagesFullPaths() => 
+    public List<string> GetRatedImagesFullPaths() =>
         GetRatedImagesFilenamesFromLogFile(false)
             .Select(f => Path.Combine(_targetBasePath!, f))
             .ToList();

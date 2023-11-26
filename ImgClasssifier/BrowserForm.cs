@@ -67,14 +67,17 @@ public partial class BrowserForm : Form
 
     //TODO: Cache thumbnails
     //TODO: Reload a single photo (right-click)
+
+    //TODO: Add options (rater and browser -> modify json)
     private void AddThumbnails()
     {
         var ratedImageFiles = _rater.GetRatedImagesFullPaths();
         RotateFlipType rotate = Enum.Parse<RotateFlipType>(_configuration["rotateForBrowsing"] ?? RotateFlipType.RotateNoneFlipNone.ToString());
-        
+        string cacheDirectory = _configuration["cachedThumbnailsDirectory"] ?? Path.Combine(_rater.TargetBasePath!, "cached");
+
         Stopwatch w = Stopwatch.StartNew();
         
-        listView1.AddImageListItems(imageList1, ratedImageFiles, rotate);
+        listView1.AddImageListViewItems(imageList1, ratedImageFiles, rotate, cacheDirectory);
 
         w.Stop(); MessageBox.Show(w.Elapsed.TotalSeconds.ToString());
     }

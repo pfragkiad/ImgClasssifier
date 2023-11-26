@@ -11,9 +11,9 @@ namespace ImgClasssifier.ControlExtensions;
 
 public static class ImageListExtensions
 {
-    public static List<Thumbnail> AddThumbnails(this ImageList imageList1, IEnumerable<string> filePaths, int thumbnailWidth, int thumbnailHeight, Color backColor, RotateFlipType rotate = RotateFlipType.RotateNoneFlipNone)
+    public static List<Thumbnail> AddThumbnails(this ImageList imageList1, IEnumerable<string> filePaths, int thumbnailWidth, int thumbnailHeight, Color backColor, RotateFlipType rotate = RotateFlipType.RotateNoneFlipNone, string? cacheDirectory = null)
     {
-        List<Thumbnail> thumbnailImages = ImageExtensions.GetThumbnails(filePaths, thumbnailWidth, thumbnailHeight, backColor, rotate);
+        List<Thumbnail> thumbnailImages = ImageExtensions.GetThumbnails(filePaths, thumbnailWidth, thumbnailHeight, backColor, rotate, cacheDirectory);
 
         imageList1.Images.Clear();
         imageList1.Images.AddRange(thumbnailImages.Select(e => e.Image).ToArray());

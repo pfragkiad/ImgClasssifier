@@ -37,19 +37,56 @@ public static class ImageExtensions
         return thumbnailImage;
     }
 
-    public static List<Thumbnail> GetThumbnails(IEnumerable<string> filePaths, int thumbnailWidth, int thumbnailHeight, Color backColor, RotateFlipType rotate = RotateFlipType.RotateNoneFlipNone)
+    public static List<Thumbnail> GetThumbnails(IEnumerable<string> filePaths, int thumbnailWidth, int thumbnailHeight, Color backColor, RotateFlipType rotate = RotateFlipType.RotateNoneFlipNone, string? cacheDirectory = null)
     {
         //key is the filename
         ConcurrentBag<Thumbnail> images = new();
-        Parallel.ForEach(filePaths,
-            ratedFilename =>
-            images.Add(new Thumbnail
-            {
-                Key = Path.GetFileName(ratedFilename),
-                Image = GetThumbnailImage(ratedFilename, thumbnailWidth, thumbnailHeight, backColor, rotate)
-            })
-        );
-        return images.OrderBy(t=>t.Key).ToList();
+
+        if (!string.IsNullOrWhiteSpace(cacheDirectory) && (Directory.Exists(cacheDirectory) || Directory.Exists(Path.GetDirectoryName(cacheDirectory))))
+        {
+            if(!Directory.Exists(cacheDirectory)) Directory.CreateDirectory(cacheDirectory);
+
+            Parallel.ForEach(filePaths,
+                  ratedFilePath =>
+                  {
+                      string key = Path.GetFileName(ratedFilePath);
+                      string cachedFilename = Path.GetFileNameWithoutExtension(ratedFilePath) +
+                           $"_{thumbnailWidth}_{thumbnailHeight}_{backColor.ToArgb():X}_{rotate}" + Path.GetExtension(ratedFilePath);
+                      string cachedFilePath = Path.Combine(cacheDirectory, cachedFilename);
+
+                      if (!File.Exists(cachedFilePath))
+                      {
+                          var newImage = GetThumbnailImage(ratedFilePath, thumbnailWidth, thumbnailHeight, backColor, rotate);
+                          images.Add(new Thumbnail
+                          {
+                              Key = key,
+                              Image = newImage
+                          });
+                          newImage.Save(cachedFilePath);
+                      }
+                      else
+                          images.Add(new Thumbnail
+                          {
+                              Key = key,
+                              Image = GetUnlockedImageFromFile(cachedFilePath)
+                          });
+
+                  }
+              );
+        }
+        else
+            //no cache approach
+            Parallel.ForEach(filePaths,
+                ratedFilename =>
+                images.Add(new Thumbnail
+                {
+                    Key = Path.GetFileName(ratedFilename),
+                    Image = GetThumbnailImage(ratedFilename, thumbnailWidth, thumbnailHeight, backColor, rotate)
+                })
+            );
+
+
+        return [.. images.OrderBy(t => t.Key)];
     }
 
 

@@ -16,11 +16,12 @@ public static class ListViewExtensions
        .SetValue(control, true, null);
     }
 
-    public static void AddImageListItems(
+    public static void AddImageListViewItems(
         this ListView listView,
         ImageList imageList,
         IEnumerable<string> imageFiles,
-        RotateFlipType rotate
+        RotateFlipType rotate,
+        string? cacheDirectory = null
         )
     {
         listView.Items.Clear();
@@ -30,7 +31,7 @@ public static class ListViewExtensions
         int thumbnailHeight = imageList.ImageSize.Height;
         Color backColor = listView.BackColor;
 
-        List<Thumbnail> thumbnails = imageList.AddThumbnails(imageFiles, thumbnailWidth, thumbnailHeight, backColor, rotate);
+        List<Thumbnail> thumbnails = imageList.AddThumbnails(imageFiles, thumbnailWidth, thumbnailHeight, backColor, rotate, cacheDirectory);
 
         ListViewItem[] listViewItems = thumbnails
             .Select(t => new ListViewItem(t.Key, t.Key))
