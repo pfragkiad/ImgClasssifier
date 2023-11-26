@@ -51,7 +51,7 @@ public static class ImageExtensions
                   {
                       string key = Path.GetFileName(ratedFilePath);
                       string cachedFilename = Path.GetFileNameWithoutExtension(ratedFilePath) +
-                           $"_{thumbnailWidth}_{thumbnailHeight}_{backColor.ToArgb():X}_{rotate}" + Path.GetExtension(ratedFilePath);
+                           $"_{thumbnailWidth}_{thumbnailHeight}_{backColor.ToArgb():X}_{(int)rotate:0}" + Path.GetExtension(ratedFilePath);
                       string cachedFilePath = Path.Combine(cacheDirectory, cachedFilename);
 
                       if (!File.Exists(cachedFilePath))

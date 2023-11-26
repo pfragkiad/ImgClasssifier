@@ -1,3 +1,4 @@
+using ImgClasssifier.ControlExtensions;
 using ImgClasssifier.Rating;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,12 +15,13 @@ internal static class Program
     /// </summary>
     [STAThread]
     static void Main()
-    +{
+    {
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices( (context,services) =>
             {
                 services
                 .AddSingleton<Form1>()
+                .Configure<BrowserOptions>(context.Configuration.GetSection("browser"))
                 .AddTransient<BrowserForm>()
 
                 .AddSingleton<PictureRater>()

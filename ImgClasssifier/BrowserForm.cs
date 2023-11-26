@@ -2,6 +2,7 @@
 using ImgClasssifier.ControlExtensions;
 using ImgClasssifier.Rating;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
 namespace ImgClasssifier;
@@ -9,15 +10,16 @@ namespace ImgClasssifier;
 public partial class BrowserForm : Form
 {
     private readonly PictureRater _rater;
-    private readonly IConfiguration _configuration;
+    private readonly BrowserOptions _options;
 
-    public BrowserForm(PictureRater rater, IConfiguration configuration)
+    public BrowserForm(PictureRater rater,
+        IOptions<BrowserOptions> options)
     {
         InitializeComponent();
 
         listView1.EnableDoubleBuffering();
         _rater = rater;
-        _configuration = configuration;
+        _options = options.Value;
         _listDragDropper = new ListViewListItemDragDropper(listView1);
         _listDragDropper.ItemMoved += ListDragDropper_ItemMoved;
     }
@@ -66,8 +68,10 @@ public partial class BrowserForm : Form
     public void UpdateBrowser()
     {
         var ratedImageFiles = _rater.GetRatedImagesPaths();
-        RotateFlipType rotate = Enum.Parse<RotateFlipType>(_configuration["rotateForBrowsing"] ?? RotateFlipType.RotateNoneFlipNone.ToString());
-        string cacheDirectory = _configuration["cachedThumbnailsDirectory"] ?? Path.Combine(_rater.TargetBasePath!, "cached");
+        //RotateFlipType rotate = Enum.Parse<RotateFlipType>(_configuration["rotateForBrowsing"] ?? RotateFlipType.RotateNoneFlipNone.ToString());
+        RotateFlipType rotate = _options.RotateForBrowsing;
+        //string cacheDirectory = _configuration["cachedThumbnailsDirectory"] ?? Path.Combine(_rater.TargetBasePath!, "cached");
+        string cacheDirectory = _options.CachedThumbnailsDirectory ?? Path.Combine(_rater.TargetBasePath!, "cached");
 
         Stopwatch w = Stopwatch.StartNew();
 
