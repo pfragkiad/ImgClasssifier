@@ -1,8 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System.CodeDom;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
+using static ImgClasssifier.Images.ImageExtensions;
 
 namespace ImgClasssifier.Rating;
+
+//TODO: Add extension to rated filename
 
 public partial class PictureRater
 {
@@ -14,15 +18,10 @@ public partial class PictureRater
     string _currentFile = "";
     public string CurrentFile { get => _currentFile; }
 
-    List<string> _images = new();
-    public int UnratedImagesCount { get => _images.Count; }
+    List<string> _unratedFiles = new();
+    public int UnratedImagesCount { get => _unratedFiles.Count; }
 
-    string? _sourceBasePath, _targetBasePath, _logFile, _unregisteredPath;
 
-    public List<string> GetRatedImages()
-    {
-        return GetRatedImagesFilenames(false).Select(f => Path.Combine(_targetBasePath, f)).ToList();
-    }
 
     public RatingIndex? GetRatingIndex(string filename)
     {
@@ -44,12 +43,18 @@ public partial class PictureRater
         }
      */
 
+    #region Constructor and reset
+
+
+
     public PictureRater(IConfiguration configuration)
     {
         _configuration = configuration;
 
         CheckSettings();
     }
+
+    string? _sourceBasePath, _targetBasePath, _logFile, _unregisteredPath;
 
     private void CheckSettings()
     {
@@ -67,54 +72,64 @@ public partial class PictureRater
 
     }
 
-    public event EventHandler? Refreshing;
-
-    public void RefreshFiles()
-    {
-        //txtLog.Clear();
-        Refreshing?.Invoke(this, EventArgs.Empty);
-
-        Reset();
-
-        //updates the internal images property
-        LoadUnratedFiles();
-
-        RemoveDuplicateAlreadyRatedFiles();
-
-        //CheckRegisteredRatedFiles();
-        MoveUnregisteredRatedFiles();
-
-        GotoNextFile();
-    }
-
-
     public event EventHandler? ResetCompleted;
 
     public void Reset()
     {
         _currentIndex = -1;
         _currentFile = "";
+        _unratedFiles = [];
+
         ResetCompleted?.Invoke(this, EventArgs.Empty);
     }
 
+    #endregion
+
+
+    #region Load and check unrated/rated files
+
+    public event EventHandler? LoadingUnratedFiles;
+
+    public void LoadUnratedFilesAndCheckRatedFiles()
+    {
+        //txtLog.Clear();
+        LoadingUnratedFiles?.Invoke(this, EventArgs.Empty);
+
+        Reset();
+
+        //updates the _images
+        LoadUnratedFiles();
+
+        //remove already rated images from _images
+        RemoveDuplicateAlreadyRatedFiles();
+
+        //check for orphan rated files
+        MoveUnregisteredRatedFiles();
+
+        GotoNextFile();
+    }
+
+ 
+
     private void LoadUnratedFiles()
     {
-        var exclusionsParentDirectories = _configuration.GetSection("exclusions").GetChildren().Select(c => c.Value).ToList();
+        List<string> excludedDirectoryNames = _configuration.GetSection("excludedDirectoryNames").GetChildren().Select(c => c.Value!).ToList();
 
-        _images = Directory.GetFiles(_sourceBasePath!, "*.jpg", SearchOption.AllDirectories).Where(f =>
-        {
-            string fileName = Path.GetFileNameWithoutExtension(f);
-            var m = CodedRegex().Match(fileName);
-            //ignore the rated images
-            if (m.Success) return false;
+        bool searchSubDirectories = _configuration.GetValue<bool?>("searchSubDirectories") ?? true;
+        _unratedFiles = Directory
+            .GetFiles(_sourceBasePath!, "*.*",
+                searchSubDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+            .Where(f =>
+            {
+                string fileName = Path.GetFileName(f);
+                var m = CodedRegex().Match(fileName);
 
-
-            if (exclusionsParentDirectories.Contains(Path.GetFileName(Path.GetDirectoryName(f))))
-                return false;
-
-
-            return !m.Success;
-        }).ToList();
+                //ignore the rated images, non-image files and files with parents in exclusions list
+                return !m.Success
+                    && IsImageFile(f)
+                    && !excludedDirectoryNames.Contains(Path.GetFileName(Path.GetDirectoryName(f)!));
+            })
+            .ToList();
 
     }
 
@@ -123,60 +138,41 @@ public partial class PictureRater
     private void RemoveDuplicateAlreadyRatedFiles()
     {
         //HashSet<string> ratedImages = GetRatedImages(originalFile:true);
-        var ratedImages = GetRatedImagesDictionary();
+        var ratedImages = GetRatedImagesDictionaryFromLogFile();
 
-        for (int i = _images.Count - 1; i >= 0; i--)
+        for (int i = _unratedFiles.Count - 1; i >= 0; i--)
         {
-            string f = _images[i];
+            string f = _unratedFiles[i];
             string fileName = Path.GetFileName(f);
-            if (ratedImages.ContainsKey(fileName))
+            if (ratedImages.TryGetValue(fileName, out string? value))
             {
                 try
                 {
                     File.Delete(f);
-                    _images.RemoveAt(i);
+                    _unratedFiles.RemoveAt(i);
 
-                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(fileName, ratedImages[fileName], true));
+                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(fileName, value, true));
                 }
                 catch
                 {
-                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(f, ratedImages[fileName], false));
+                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(f, value, false));
                 }
                 //txtLog.AppendText($"Removed {fileName}: exists as {ratedImages[fileName]}\r\n");
             }
         }
 
     }
-    private Dictionary<string, string> GetRatedImagesDictionary()
-    {
-        string logFile = _configuration["logFile"]!;
-        var ratedImages = File.ReadAllLines(logFile)
-            .ToDictionary(l => l.Split('\t')[0], l => l.Split('\t')[1]);
-
-        return ratedImages;
-    }
-
-    public void ResetSortOrderInLogfile()
-    {
-        string logFile = _configuration["logFile"]!;
-        //store backup file
-        File.Copy(logFile, Path.Combine(Path.GetDirectoryName(logFile), Path.GetFileName(logFile) + ".bak"), true);
-
-        var ratedImages = File.ReadAllLines(logFile).
-            Select(l => (UnratedFile: l.Split('\t')[0], RatedFile: l.Split('\t')[1])).
-            OrderBy(e => e.RatedFile).ToList();
-
-        using StreamWriter writer = new StreamWriter(logFile);
-        foreach (var e in ratedImages)
-            writer.WriteLine($"{e.UnratedFile}\t{e.RatedFile}");
-    }
 
     public event EventHandler<FileMovedUnregisteredFileEventEventArgs>? MovedUnregisteredRatedFile;
+
     private void MoveUnregisteredRatedFiles()
     {
-        HashSet<string> ratedImages = GetRatedImagesFilenames(originalFile: false);
+        HashSet<string> ratedImages = GetRatedImagesFilenamesFromLogFile(originalFile: false);
 
-        string[] allRatedFiles = Directory.GetFiles(_targetBasePath!, "*.jpg");
+        string[] allRatedFiles = Directory
+            .GetFiles(_targetBasePath!)
+            .Where(f=> IsImageFile(f))
+            .ToArray();
 
         //List<string> filesToMove = new();
         for (int i = allRatedFiles.Length - 1; i >= 0; i--)
@@ -186,28 +182,40 @@ public partial class PictureRater
             if (!ratedImages.Contains(ratedFilename))
             {
 
-                File.Move(ratedFile, Path.Combine(_unregisteredPath, Path.GetFileName(ratedFile)));
+                File.Move(ratedFile, Path.Combine(_unregisteredPath!, Path.GetFileName(ratedFile)));
                 MovedUnregisteredRatedFile?.Invoke(this, new FileMovedUnregisteredFileEventEventArgs(ratedFile));
             }
         }
     }
 
+    private IEnumerable<string> GetLogfileLines() =>
+        File.ReadAllLines(_logFile!)
+            .Where(l => !string.IsNullOrWhiteSpace(l) && l.Contains('\t'));
 
-    private HashSet<string> GetRatedImagesFilenames(bool originalFile)
-    {
-        string logFile = _configuration["logFile"]!;
-        HashSet<string> ratedImages = File.ReadAllLines(logFile).Select(l =>
-            l.Split('\t')[originalFile ? 0 : 1]
-        ).ToHashSet();
-        return ratedImages;
-    }
+    private Dictionary<string, string> GetRatedImagesDictionaryFromLogFile() =>
+        GetLogfileLines()
+            .ToDictionary(l => l.Split('\t')[0], l => l.Split('\t')[1]);
+
+    public List<string> GetRatedImagesFullPaths() => 
+        GetRatedImagesFilenamesFromLogFile(false)
+            .Select(f => Path.Combine(_targetBasePath!, f))
+            .ToList();
+
+    private HashSet<string> GetRatedImagesFilenamesFromLogFile(bool originalFile) =>
+        GetLogfileLines()
+            .Select(l => l.Split('\t')[originalFile ? 0 : 1])
+            .ToHashSet();
+
+
+    #endregion
 
 
 
+    #region Proceed to next file and save current file
     public event EventHandler? ProceededToNextFile;
     public void GotoNextFile()
     {
-        if (_images.Count == 0)
+        if (_unratedFiles.Count == 0)
         {
             Reset();
             return;
@@ -216,9 +224,8 @@ public partial class PictureRater
         _currentIndex++;
 
         //cycle
-        if (_currentIndex >= _images.Count) _currentIndex = 0;
-
-        _currentFile = _images[_currentIndex];
+        if (_currentIndex >= _unratedFiles.Count) _currentIndex = 0;
+        _currentFile = _unratedFiles[_currentIndex];
 
         ProceededToNextFile?.Invoke(this, EventArgs.Empty);
     }
@@ -227,19 +234,19 @@ public partial class PictureRater
     {
         if (_currentFile == "") return;
 
-        SaveImageAs(_currentFile, rating);
+        SaveUnratedImageAsRated(_currentFile, rating);
     }
 
-    public event EventHandler<FileMoveFailedEventArgs> MoveImageFailed;
+    public event EventHandler<FileMoveFailedEventArgs>? MoveImageFailed;
 
-    public void SaveImageAs(string fileName, int rating)
+    public void SaveUnratedImageAsRated(string fileName, int rating)
     {
         try
         {
             string targetFileNameWithoutCounter = $"{rating:000}";
             string[] existingFiles = Directory.GetFiles(_targetBasePath!, $"{targetFileNameWithoutCounter}_*.jpg");
             int counter = existingFiles.Length > 0 ?
-                existingFiles.Select(f => int.Parse(Path.GetFileNameWithoutExtension(f).Substring(4))).Max() + 1 : 1;
+                existingFiles.Select(f => int.Parse(Path.GetFileNameWithoutExtension(f)[4..])).Max() + 1 : 1;
 
             if (counter > 9999) throw new InvalidOperationException("Cannot have more than 9999 images per rating.");
 
@@ -248,12 +255,11 @@ public partial class PictureRater
             File.Move(fileName, targetPath);
 
             //log file
-            string logFile = _configuration["logFile"]!;
-            var writer = File.AppendText(logFile);
+            var writer = File.AppendText(_logFile!);
             writer.WriteLine($"{Path.GetFileName(fileName)}\t{targetFilename}");
             writer.Flush(); writer.Close();
 
-            _images.Remove(fileName);
+            _unratedFiles.Remove(fileName);
             _currentIndex--;
         }
         catch (Exception ex)
@@ -262,6 +268,49 @@ public partial class PictureRater
         }
     }
 
-    [GeneratedRegex(@"^\d{3}_\d{4}$", RegexOptions.IgnoreCase, "el-GR")]
+    [GeneratedRegex(@"^\d{3}_\d{4}\.", RegexOptions.IgnoreCase)]
     private static partial Regex CodedRegex();
+
+    #endregion
+
+    public bool SwapRatings(string ratedFilenameWithoutExtension1, string ratedFilenameWithoutExtension2)
+    {
+        //both files should be in "rating" format
+        Match m = CodedRegex().Match(ratedFilenameWithoutExtension1);
+        if (!m.Success) return false;
+        m = CodedRegex().Match(ratedFilenameWithoutExtension2);
+        if (!m.Success) return false;
+
+        BackupLogFile();
+
+        //get all log records (file will be saved back)
+        var ratedImages = File.ReadAllLines(_logFile!).
+            Select(l => (UnratedFile: l.Split('\t')[0], RatedFile: l.Split('\t')[1])).
+            OrderBy(e => e.RatedFile).ToList();
+
+
+
+
+        return false;
+    }
+
+    private void BackupLogFile()
+    {
+        File.Copy(_logFile!, Path.Combine(Path.GetDirectoryName(_logFile!)!, Path.GetFileName(_logFile!) + ".bak"), true);
+    }
+
+    public void ResetSortOrderInLogfile()
+    {
+        BackupLogFile();
+
+        var ratedImages = File.ReadAllLines(_logFile!).
+            Select(l => (UnratedFile: l.Split('\t')[0], RatedFile: l.Split('\t')[1])).
+            OrderBy(e => e.RatedFile).ToList();
+
+        using StreamWriter writer = new StreamWriter(_logFile!);
+        foreach (var e in ratedImages)
+            writer.WriteLine($"{e.UnratedFile}\t{e.RatedFile}");
+    }
+
+
 }

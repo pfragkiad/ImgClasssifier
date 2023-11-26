@@ -21,12 +21,12 @@ public partial class Form1 : Form
 
         toolTip1.SetToolTip(trackBar1, $"{trackBar1.Value}");
 
-        _rater.RefreshFiles();
+        _rater.LoadUnratedFilesAndCheckRatedFiles();
     }
 
     private void AddRaterEvents()
     {
-        _rater.Refreshing += (o, e) => txtLog.Clear();
+        _rater.LoadingUnratedFiles += (o, e) => txtLog.Clear();
 
         _rater.RemovedDuplicateAlreadyRatedFile +=
           (o, e) =>
@@ -77,7 +77,7 @@ public partial class Form1 : Form
 
     private void btnRefresh_Click(object sender, EventArgs e)
     {
-        _rater.RefreshFiles();
+        _rater.LoadUnratedFilesAndCheckRatedFiles();
     }
 
     private void btnSave_Click(object sender, EventArgs e)
