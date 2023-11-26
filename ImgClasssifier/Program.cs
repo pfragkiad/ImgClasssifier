@@ -14,14 +14,16 @@ internal static class Program
     /// </summary>
     [STAThread]
     static void Main()
-    {
+    +{
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices( (context,services) =>
             {
                 services
                 .AddSingleton<Form1>()
                 .AddTransient<BrowserForm>()
+
                 .AddSingleton<PictureRater>()
+                .Configure<RaterOptions>(context.Configuration.GetSection("rater"))
                 ;
             })
             .Build();

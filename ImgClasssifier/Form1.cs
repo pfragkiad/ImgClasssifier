@@ -115,6 +115,9 @@ public partial class Form1 : Form
     private void btnBrowseRated_Click(object sender, EventArgs e)
     {
         var form = Program.Provider.GetRequiredService<BrowserForm>();
+        Cursor.Current = Cursors.WaitCursor;
+        form.UpdateBrowser();
+        Cursor.Current = Cursors.Default;
         form.ShowDialog();
     }
 }

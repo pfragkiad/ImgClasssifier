@@ -1,14 +1,8 @@
 ﻿
 using ImgClasssifier.ControlExtensions;
-using ImgClasssifier.Images;
 using ImgClasssifier.Rating;
 using Microsoft.Extensions.Configuration;
-using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Text.RegularExpressions;
-using System.Windows.Forms;
 
 namespace ImgClasssifier;
 
@@ -65,34 +59,25 @@ public partial class BrowserForm : Form
     ListViewListItemDragDropper? _listDragDropper;
 
 
-    //TODO: Cache thumbnails
+    //TODO: Fix drag and drop item.
     //TODO: Reload a single photo (right-click)
 
     //TODO: Add options (rater and browser -> modify json)
-    private void AddThumbnails()
+    public void UpdateBrowser()
     {
-        var ratedImageFiles = _rater.GetRatedImagesFullPaths();
+        var ratedImageFiles = _rater.GetRatedImagesPaths();
         RotateFlipType rotate = Enum.Parse<RotateFlipType>(_configuration["rotateForBrowsing"] ?? RotateFlipType.RotateNoneFlipNone.ToString());
         string cacheDirectory = _configuration["cachedThumbnailsDirectory"] ?? Path.Combine(_rater.TargetBasePath!, "cached");
 
         Stopwatch w = Stopwatch.StartNew();
-        
+
         listView1.AddImageListViewItems(imageList1, ratedImageFiles, rotate, cacheDirectory);
 
-        w.Stop(); MessageBox.Show(w.Elapsed.TotalSeconds.ToString());
+        w.Stop();
+        if (w.ElapsedMilliseconds > 5000)
+            MessageBox.Show(w.Elapsed.TotalSeconds.ToString());
     }
 
-
-    private void button1_Click(object sender, EventArgs e)
-    {
-        Application.UseWaitCursor = true;
-        Cursor.Current = Cursors.WaitCursor;
-
-        AddThumbnails();
-        Application.UseWaitCursor = false;
-
-        Cursor.Current = Cursors.Default;
-    }
 
     private void listView1_KeyDown(object sender, KeyEventArgs e)
     {

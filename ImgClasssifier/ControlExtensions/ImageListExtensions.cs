@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ImgClasssifier.Images;
-
-using static System.Windows.Forms.AxHost;
+﻿using ImgClasssifier.Images;
 
 namespace ImgClasssifier.ControlExtensions;
 

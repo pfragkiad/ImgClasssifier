@@ -76,6 +76,10 @@ public class ListViewListItemDragDropper
     private void ListView_MouseUp(object? sender, MouseEventArgs e)
     {
         if (_draggedItem is null) return;
+
+        _draggedCurrentPoint = new Point(e.X - _draggedItem.Position.X, e.Y - _draggedItem.Position.Y);
+        //_draggedItem.Position = new Point(e.Location.X, e.Location.Y);
+
         _listView.AutoArrange = true;
 
         _graph.Update();
