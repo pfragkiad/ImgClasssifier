@@ -1,9 +1,21 @@
-﻿namespace ImgClasssifier.Rating;
+﻿using System.Text.RegularExpressions;
+
+namespace ImgClasssifier.Rating;
 
 public class RatingIndex(int rating, int index) : IComparable<RatingIndex>
 {
     public int Rating { get; } = rating;
     public int Index { get; } = index;
+
+    public static RatingIndex? FromFilename(string filename)
+    {
+        Match m = Regex.Match(filename, @"^(?<rating>\d{3})_(?<index>\d{4})\.");
+        if (!m.Success) return null;
+
+        return new RatingIndex(
+            rating: int.Parse(m.Groups["rating"].Value),
+            index: int.Parse(m.Groups["index"].Value));
+    }
 
     public override string ToString()
     {

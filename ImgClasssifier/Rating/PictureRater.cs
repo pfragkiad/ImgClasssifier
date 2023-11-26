@@ -10,9 +10,6 @@ namespace ImgClasssifier.Rating;
 
 public partial class PictureRater
 {
-
-
-
     /*
       "rater": {
         "sourceBasePath": "D:\\temp\\ai",
@@ -104,7 +101,7 @@ public partial class PictureRater
         if (!Directory.Exists(UnregisteredPath)) Directory.CreateDirectory(UnregisteredPath);
 
         //List<string> excludedDirectoryNames = _configuration.GetSection("excludedDirectoryNames").GetChildren().Select(c => c.Value!).ToList();
-        
+
         //bool searchSubDirectories = _configuration.GetValue<bool?>("searchSubDirectories") ?? true;
     }
 
@@ -158,8 +155,7 @@ public partial class PictureRater
 
     private void RemoveDuplicateAlreadyRatedFiles()
     {
-        //HashSet<string> ratedImages = GetRatedImages(originalFile:true);
-        var ratedImages = GetRatedImagesDictionaryFromLogFile();
+        var ratedImages = UnratedRatedFile.GetRatedImagesDictionaryFromLogFile(LogFile!);
 
         for (int i = _unratedFiles.Count - 1; i >= 0; i--)
         {
@@ -188,7 +184,7 @@ public partial class PictureRater
 
     private void MoveUnregisteredRatedFiles()
     {
-        HashSet<string> ratedImages = GetRatedImagesFilenamesFromLogFile(originalFile: false);
+        HashSet<string> ratedImages = UnratedRatedFile.GetRatedImagesFilenamesFromLogFile(LogFile!);
 
         string[] allRatedFiles = Directory
             .GetFiles(TargetBasePath!)
@@ -208,24 +204,6 @@ public partial class PictureRater
             }
         }
     }
-
-    private IEnumerable<string> GetLogfileLines() =>
-        File.ReadAllLines(LogFile!)
-            .Where(l => !string.IsNullOrWhiteSpace(l) && l.Contains('\t'));
-
-    private Dictionary<string, string> GetRatedImagesDictionaryFromLogFile() =>
-        GetLogfileLines()
-            .ToDictionary(l => l.Split('\t')[0], l => l.Split('\t')[1]);
-
-    public List<string> GetRatedImagesPaths() =>
-        GetRatedImagesFilenamesFromLogFile(false)
-            .Select(f => Path.Combine(TargetBasePath!, f))
-            .ToList();
-
-    private HashSet<string> GetRatedImagesFilenamesFromLogFile(bool originalFile) =>
-        GetLogfileLines()
-            .Select(l => l.Split('\t')[originalFile ? 0 : 1])
-            .ToHashSet();
 
     public int UnratedImagesCount { get => _unratedFiles.Count; }
 
@@ -262,7 +240,7 @@ public partial class PictureRater
 
     public event EventHandler<FileMoveFailedEventArgs>? MoveImageFailed;
 
-    public void SaveUnratedImageAsRated(string fileName, int rating)
+    private void SaveUnratedImageAsRated(string fileName, int rating)
     {
         try
         {
@@ -295,54 +273,72 @@ public partial class PictureRater
     private static partial Regex CodedRegex();
 
     #endregion
-    public RatingIndex? GetRatingIndex(string filename)
-    {
-        Match m = Regex.Match(filename, @"^(?<rating>\d{3})_(?<index>\d{4})\.");
-        if (!m.Success) return null;
 
-        return new RatingIndex(
-            rating: int.Parse(m.Groups["rating"].Value),
-            index: int.Parse(m.Groups["index"].Value));
-    }
 
-    public bool SwapRatings(string ratedFilenameWithoutExtension1, string ratedFilenameWithoutExtension2)
-    {
-        //both files should be in "rating" format
-        Match m = CodedRegex().Match(ratedFilenameWithoutExtension1);
-        if (!m.Success) return false;
-        m = CodedRegex().Match(ratedFilenameWithoutExtension2);
-        if (!m.Success) return false;
+    //public bool SwapRatings(string ratedFilenameWithoutExtension1, string ratedFilenameWithoutExtension2)
+    //{
+    //    //both files should be in "rating" format
+    //    Match m = CodedRegex().Match(ratedFilenameWithoutExtension1);
+    //    if (!m.Success) return false;
+    //    m = CodedRegex().Match(ratedFilenameWithoutExtension2);
+    //    if (!m.Success) return false;
 
-        BackupLogFile();
+    //    BackupLogFile();
 
-        //get all log records (file will be saved back)
-        var ratedImages = File.ReadAllLines(LogFile!).
-            Select(l => (UnratedFile: l.Split('\t')[0], RatedFile: l.Split('\t')[1])).
-            OrderBy(e => e.RatedFile).ToList();
+    //    //get all log records (file will be saved back)
+    //    var ratedImages = File.ReadAllLines(LogFile!).
+    //        Select(l => (UnratedFile: l.Split('\t')[0], RatedFile: l.Split('\t')[1])).
+    //        OrderBy(e => e.RatedFile).ToList();
 
 
 
 
-        return false;
-    }
+    //    return false;
+    //}
+
+    #region Log file
+
+    public List<string> GetRatedImagesPaths() => UnratedRatedFile.GetRatedImagesPaths(LogFile!, TargetBasePath!);
 
     private void BackupLogFile()
     {
         File.Copy(LogFile!, Path.Combine(Path.GetDirectoryName(LogFile!)!, Path.GetFileName(LogFile!) + ".bak"), true);
     }
-
+    
     public void ResetSortOrderInLogfile()
     {
         BackupLogFile();
 
-        var ratedImages = File.ReadAllLines(LogFile!).
-            Select(l => (UnratedFile: l.Split('\t')[0], RatedFile: l.Split('\t')[1])).
-            OrderBy(e => e.RatedFile).ToList();
+        List<UnratedRatedFile> unratedRatedFiles = UnratedRatedFile.FromLogfile(LogFile!);
 
-        using StreamWriter writer = new StreamWriter(LogFile!);
-        foreach (var e in ratedImages)
-            writer.WriteLine($"{e.UnratedFile}\t{e.RatedFile}");
+        SaveToLogFile(unratedRatedFiles);
     }
 
+    private void SaveToLogFile(IEnumerable<UnratedRatedFile> unratedRatedFiles)
+    {
+        using StreamWriter writer = new(LogFile!);
+        foreach (var e in unratedRatedFiles)
+            writer.WriteLine($"{e.UnratedFilename}\t{e.RatedFilename}");
+
+    }
+
+    #endregion
+
+    public bool ChangeRating(string ratedFilename, int newRating, int? newIndex=null)
+    {
+        var oldRatingIndex = RatingIndex.FromFilename(ratedFilename);
+        if (oldRatingIndex is null)
+            //throw new InvalidOperationException($"The filename is not in rater index format ('{ratedFilename}').");
+            return false; //cannot change
+
+        if (newRating == oldRatingIndex.Rating && newIndex == oldRatingIndex.Index)
+            return false; //no change
+
+        //if we arrive here we can continue
+
+        
+
+        return false;
+    }
 
 }

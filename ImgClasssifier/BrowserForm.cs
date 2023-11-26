@@ -26,9 +26,9 @@ public partial class BrowserForm : Form
 
     private void ListDragDropper_ItemMoved(object? sender, ListItemMovedEventArgs e)
     {
-        var currentRating = _rater.GetRatingIndex(e.Item!.Text);
-        var previousRating = e.Previous is not null ? _rater.GetRatingIndex(e.Previous!.Text) : null;
-        var nextRating = e.Next is not null ? _rater.GetRatingIndex(e.Next!.Text) : null;
+        var currentRating = RatingIndex.FromFilename(e.Item!.Text);
+        var previousRating = e.Previous is not null ? RatingIndex.FromFilename(e.Previous!.Text) : null;
+        var nextRating = e.Next is not null ? RatingIndex.FromFilename(e.Next!.Text) : null;
 
         if (previousRating is not null && nextRating is not null &&
             previousRating >= nextRating)
@@ -63,14 +63,12 @@ public partial class BrowserForm : Form
 
     //TODO: Fix drag and drop item.
     //TODO: Reload a single photo (right-click)
-
-    //TODO: Add options (rater and browser -> modify json)
     public void UpdateBrowser()
     {
-        var ratedImageFiles = _rater.GetRatedImagesPaths();
-        //RotateFlipType rotate = Enum.Parse<RotateFlipType>(_configuration["rotateForBrowsing"] ?? RotateFlipType.RotateNoneFlipNone.ToString());
+        var ratedImageFiles = //UnratedRatedFile.GetRatedImagesPaths(_rater.LogFile!, _rater.TargetBasePath!); 
+            _rater.GetRatedImagesPaths();
+
         RotateFlipType rotate = _options.RotateForBrowsing;
-        //string cacheDirectory = _configuration["cachedThumbnailsDirectory"] ?? Path.Combine(_rater.TargetBasePath!, "cached");
         string cacheDirectory = _options.CachedThumbnailsDirectory ?? Path.Combine(_rater.TargetBasePath!, "cached");
 
         Stopwatch w = Stopwatch.StartNew();
