@@ -225,9 +225,6 @@ public partial class PictureRater
             MovedUnregisteredRatedFile?.Invoke(this, new FileMovedUnregisteredFileEventEventArgs(ratedFile));
         }
     }
-
-
-
     #endregion
 
 
@@ -272,7 +269,7 @@ public partial class PictureRater
             //string targetFilename = $"{targetFileNameWithoutCounter}_{index:0000}{extension}";
 
             RatingIndex ratingIndex = new(rating, _ratedFiles
-                .Select(r => r.GetRatingIndex())
+                .Select(r => r.RatingIndex)
                 .Where(r => r is not null && r.Rating == rating)
                 .Select(r => r!.Index)
                 .DefaultIfEmpty()
@@ -354,7 +351,7 @@ public partial class PictureRater
         if (iRated == -1) //unregistered case SHOULD NOT HAPPEN
             throw new InvalidOperationException(ratedFilename + " is unregistered!");
 
-        var oldRatingIndex = _ratedFiles[iRated].GetRatingIndex(); //RatingIndex.FromFilename(ratedFilename);
+        var oldRatingIndex = _ratedFiles[iRated].RatingIndex; //RatingIndex.FromFilename(ratedFilename);
         if (oldRatingIndex is null)
             throw new InvalidOperationException($"The filename is not in rater index format ('{ratedFilename}').");
         //return false; //cannot change

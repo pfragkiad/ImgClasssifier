@@ -6,13 +6,32 @@ using System.Threading.Tasks;
 
 namespace ImgClasssifier.Rating;
 
-public class UnratedRatedFile(string unratedFilename, string ratedFilename) : IComparable<UnratedRatedFile>
+public class UnratedRatedFile : IComparable<UnratedRatedFile>
 {
-    public string UnratedFilename { get; } = unratedFilename;
-    public string RatedFilename { get; set; } = ratedFilename;
+    public UnratedRatedFile(string unratedFilename, string ratedFilename)
+    {
+        UnratedFilename = unratedFilename;
+        RatedFilename = ratedFilename;
+    }
+
+    public string UnratedFilename { get; }
+
+    private string _ratedFilename = default!;
+
+    public string RatedFilename
+    {
+        get { return _ratedFilename; }
+        set
+        {
+            _ratedFilename = value;
+            RatingIndex = RatingIndex.FromFilename(_ratedFilename);
+        }
+    }
+
+    public RatingIndex? RatingIndex { get; private set; }
 
     public override string ToString() =>
-        $"{UnratedFilename}\t{RatedFilename}";
+        $"{UnratedFilename}\t{_ratedFilename}";
 
     public static UnratedRatedFile? FromLogfileLine(string l)
     {
@@ -35,7 +54,7 @@ public class UnratedRatedFile(string unratedFilename, string ratedFilename) : IC
     }
 
     public static HashSet<string> GetRatedImagesFilenamesFromLogFile(string logFile) =>
-        FromLogfile(logFile).Select(r => r.RatedFilename).ToHashSet();
+        FromLogfile(logFile).Select(r => r._ratedFilename).ToHashSet();
 
     ////unrated name is the key
     //public static Dictionary<string, string> GetRatedImagesDictionaryFromLogFile(string logFile) =>
@@ -49,13 +68,11 @@ public class UnratedRatedFile(string unratedFilename, string ratedFilename) : IC
 
     public static void SaveToLogFile(IEnumerable<UnratedRatedFile> unratedRatedFiles, string logFile) =>
         File.WriteAllLines(logFile, unratedRatedFiles.Select(e => $"{e}"));
-    
-    public RatingIndex? GetRatingIndex() => RatingIndex.FromFilename(RatedFilename);
 
     //Allows the use of Order() in a List.
     public int CompareTo(UnratedRatedFile? other)
     {
-        return RatedFilename.CompareTo(other.RatedFilename);
+        return _ratedFilename.CompareTo(other._ratedFilename);
     }
 }
 
