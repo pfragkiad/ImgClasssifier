@@ -41,7 +41,7 @@ public partial class PictureRater
     {
         _currentIndex = -1;
         _currentFile = "";
-        _unratedFiles = [];
+        _unratedFilePaths = [];
 
         ResetCompleted?.Invoke(this, EventArgs.Empty);
     }
@@ -109,7 +109,16 @@ public partial class PictureRater
 
     #region Load and check unrated/rated files
 
-    List<string> _unratedFiles = [];
+    List<string> _unratedFilePaths = [];
+    public List<string> UnratedFilePaths { get => _unratedFilePaths; }
+    public int UnratedImagesCount { get => _unratedFilePaths.Count; }
+
+
+    //TODO: FINISH _ratedFiles in every place in the file.
+    List<UnratedRatedFile> _ratedFiles = [];
+    public List<UnratedRatedFile> RatedFiles { get => _ratedFiles; }
+    public int RatedImagesCount { get => _ratedFiles.Count; }
+
 
     public event EventHandler? LoadingUnratedFiles;
 
@@ -120,8 +129,11 @@ public partial class PictureRater
 
         Reset();
 
-        //updates the _images
+        //updates the _unratedFilePaths
         LoadUnratedFilePaths();
+
+        //load rated files
+        _ratedFiles = UnratedRatedFile.FromLogfile(LogFile!);
 
         //remove already rated images from _images
         RemoveDuplicateAlreadyRatedFiles();
@@ -134,7 +146,7 @@ public partial class PictureRater
 
     private void LoadUnratedFilePaths()
     {
-        _unratedFiles = Directory
+        _unratedFilePaths = Directory
             .GetFiles(SourceBasePath!, "*.*",
                 SearchSubDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
             .Where(f =>
@@ -155,26 +167,24 @@ public partial class PictureRater
 
     private void RemoveDuplicateAlreadyRatedFiles()
     {
-        var ratedImages = UnratedRatedFile.GetRatedImagesDictionaryFromLogFile(LogFile!);
-
-        for (int i = _unratedFiles.Count - 1; i >= 0; i--)
+        for (int i = _unratedFilePaths.Count - 1; i >= 0; i--)
         {
-            string f = _unratedFiles[i];
+            string f = _unratedFilePaths[i];
             string fileName = Path.GetFileName(f);
-            if (ratedImages.TryGetValue(fileName, out string? value))
+            UnratedRatedFile? ratedFileEntry = _ratedFiles.FirstOrDefault(r => String.Compare(r.UnratedFilename, fileName, true) == 0);
+            if (ratedFileEntry is not null)
             {
                 try
                 {
                     File.Delete(f);
-                    _unratedFiles.RemoveAt(i);
+                    _unratedFilePaths.RemoveAt(i);
 
-                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(fileName, value, true));
+                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(fileName, ratedFileEntry.RatedFilename, true));
                 }
                 catch
                 {
-                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(f, value, false));
+                    RemovedDuplicateAlreadyRatedFile?.Invoke(this, new FileDeletedEventEventArgs(f, ratedFileEntry.RatedFilename, false));
                 }
-                //txtLog.AppendText($"Removed {fileName}: exists as {ratedImages[fileName]}\r\n");
             }
         }
 
@@ -184,28 +194,29 @@ public partial class PictureRater
 
     private void MoveUnregisteredRatedFiles()
     {
-        HashSet<string> ratedImages = UnratedRatedFile.GetRatedImagesFilenamesFromLogFile(LogFile!);
+        //HashSet<string> ratedImages = UnratedRatedFile.GetRatedImagesFilenamesFromLogFile(LogFile!);
+        HashSet<string> registeredRatedFiles = _ratedFiles.Select(r => r.RatedFilename).ToHashSet();
 
-        string[] allRatedFiles = Directory
+        string[] unregisteredFiles = Directory
             .GetFiles(TargetBasePath!)
-            .Where(f => IsImageFile(f))
+            .Where(f =>
+            {
+                string filename = Path.GetFileName(f);
+                if (registeredRatedFiles.Contains(filename)) return false;
+
+                return IsImageFile(f);
+            })
             .ToArray();
 
         //List<string> filesToMove = new();
-        for (int i = allRatedFiles.Length - 1; i >= 0; i--)
+        foreach (string ratedFile in unregisteredFiles)
         {
-            string ratedFile = allRatedFiles[i];
-            string ratedFilename = Path.GetFileName(ratedFile);
-            if (!ratedImages.Contains(ratedFilename))
-            {
-
-                File.Move(ratedFile, Path.Combine(UnregisteredPath!, Path.GetFileName(ratedFile)));
-                MovedUnregisteredRatedFile?.Invoke(this, new FileMovedUnregisteredFileEventEventArgs(ratedFile));
-            }
+            File.Move(ratedFile, Path.Combine(UnregisteredPath!, Path.GetFileName(ratedFile)));
+            MovedUnregisteredRatedFile?.Invoke(this, new FileMovedUnregisteredFileEventEventArgs(ratedFile));
         }
     }
 
-    public int UnratedImagesCount { get => _unratedFiles.Count; }
+
 
     #endregion
 
@@ -216,7 +227,7 @@ public partial class PictureRater
     public event EventHandler? ProceededToNextFile;
     public void GotoNextFile()
     {
-        if (_unratedFiles.Count == 0)
+        if (_unratedFilePaths.Count == 0)
         {
             Reset();
             return;
@@ -225,8 +236,8 @@ public partial class PictureRater
         _currentIndex++;
 
         //cycle
-        if (_currentIndex >= _unratedFiles.Count) _currentIndex = 0;
-        _currentFile = _unratedFiles[_currentIndex];
+        if (_currentIndex >= _unratedFilePaths.Count) _currentIndex = 0;
+        _currentFile = _unratedFilePaths[_currentIndex];
 
         ProceededToNextFile?.Invoke(this, EventArgs.Empty);
     }
@@ -244,23 +255,28 @@ public partial class PictureRater
     {
         try
         {
+            string extension = Path.GetExtension(fileName);
+
             string targetFileNameWithoutCounter = $"{rating:000}";
-            string[] existingFiles = Directory.GetFiles(TargetBasePath!, $"{targetFileNameWithoutCounter}_*.jpg");
+            string[] existingFiles = Directory.GetFiles(TargetBasePath!, $"{targetFileNameWithoutCounter}_*{extension}");
             int counter = existingFiles.Length > 0 ?
                 existingFiles.Select(f => int.Parse(Path.GetFileNameWithoutExtension(f)[4..])).Max() + 1 : 1;
 
             if (counter > 9999) throw new InvalidOperationException("Cannot have more than 9999 images per rating.");
 
-            string targetFilename = $"{targetFileNameWithoutCounter}_{counter:0000}.jpg";
+            string targetFilename = $"{targetFileNameWithoutCounter}_{counter:0000}{extension}";
             string targetPath = Path.Combine(TargetBasePath!, targetFilename);
             File.Move(fileName, targetPath);
 
-            //log file
+            //append to log file
             var writer = File.AppendText(LogFile!);
             writer.WriteLine($"{Path.GetFileName(fileName)}\t{targetFilename}");
             writer.Flush(); writer.Close();
 
-            _unratedFiles.Remove(fileName);
+            //update the internal collection
+            _ratedFiles.Add(new UnratedRatedFile(Path.GetFileName(fileName), targetFilename));
+
+            _unratedFilePaths.Remove(fileName);
             _currentIndex--;
         }
         catch (Exception ex)
@@ -304,27 +320,20 @@ public partial class PictureRater
     {
         File.Copy(LogFile!, Path.Combine(Path.GetDirectoryName(LogFile!)!, Path.GetFileName(LogFile!) + ".bak"), true);
     }
-    
+
     public void ResetSortOrderInLogfile()
     {
         BackupLogFile();
 
-        List<UnratedRatedFile> unratedRatedFiles = UnratedRatedFile.FromLogfile(LogFile!);
+        //_ratedFiles = [.. _ratedFiles.OrderBy(f => f.RatedFilename)];
+        _ratedFiles = [.. _ratedFiles.Order()];
 
-        SaveToLogFile(unratedRatedFiles);
-    }
-
-    private void SaveToLogFile(IEnumerable<UnratedRatedFile> unratedRatedFiles)
-    {
-        using StreamWriter writer = new(LogFile!);
-        foreach (var e in unratedRatedFiles)
-            writer.WriteLine($"{e.UnratedFilename}\t{e.RatedFilename}");
-
+        UnratedRatedFile.SaveToLogFile(_ratedFiles, LogFile!);
     }
 
     #endregion
 
-    public bool ChangeRating(string ratedFilename, int newRating, int? newIndex=null)
+    public bool ChangeRating(string ratedFilename, int newRating, int? newIndex = null)
     {
         var oldRatingIndex = RatingIndex.FromFilename(ratedFilename);
         if (oldRatingIndex is null)
@@ -335,8 +344,11 @@ public partial class PictureRater
             return false; //no change
 
         //if we arrive here we can continue
+        //there is no state for rating/unrated files - we should load all records -
+        //remove the old one, add the new one and resave the file
 
-        
+
+
 
         return false;
     }
