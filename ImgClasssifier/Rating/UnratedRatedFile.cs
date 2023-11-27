@@ -9,7 +9,7 @@ namespace ImgClasssifier.Rating;
 public class UnratedRatedFile(string unratedFilename, string ratedFilename) : IComparable<UnratedRatedFile>
 {
     public string UnratedFilename { get; } = unratedFilename;
-    public string RatedFilename { get; } = ratedFilename;
+    public string RatedFilename { get; set; } = ratedFilename;
 
     public override string ToString() =>
         $"{UnratedFilename}\t{RatedFilename}";
@@ -52,6 +52,7 @@ public class UnratedRatedFile(string unratedFilename, string ratedFilename) : IC
     
     public RatingIndex? GetRatingIndex() => RatingIndex.FromFilename(RatedFilename);
 
+    //Allows the use of Order() in a List.
     public int CompareTo(UnratedRatedFile? other)
     {
         return RatedFilename.CompareTo(other.RatedFilename);

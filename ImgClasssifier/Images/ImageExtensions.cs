@@ -17,18 +17,18 @@ public static class ImageExtensions
         catch (OutOfMemoryException) { return false; }
     }
 
-    public static Image GetUnlockedImageFromFile(string fileName)
+    public static Image GetUnlockedImageFromFile(string fileName, RotateFlipType rotate = RotateFlipType.RotateNoneFlipNone)
     {
         using FileStream stream = new(fileName, FileMode.Open, FileAccess.Read);
-        return Image.FromStream(stream);
+        var newImage = Image.FromStream(stream);
+        if (rotate != RotateFlipType.RotateNoneFlipNone)
+            newImage.RotateFlip(rotate);
+        return newImage;
     }
 
     public static Image GetThumbnailImage(string fileName, int thumbnailWidth, int thumbnailHeight, Color backColor, RotateFlipType rotate = RotateFlipType.RotateNoneFlipNone)
     {
-        var image = GetUnlockedImageFromFile(fileName);
-
-        if (rotate != RotateFlipType.RotateNoneFlipNone)
-            image.RotateFlip(rotate);
+        var image = GetUnlockedImageFromFile(fileName, rotate);
 
         //imageList1.ImageSize.Width, imageList1.ImageSize.Height, listView1.BackColor
         Image thumbnailImage = FitImage(image, thumbnailWidth, thumbnailHeight, backColor);

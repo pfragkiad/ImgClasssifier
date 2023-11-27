@@ -1,3 +1,4 @@
+using ImgClasssifier.Images;
 using ImgClasssifier.Rating;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -66,9 +67,8 @@ public partial class Form1 : Form
     {
         if (_rater.CurrentFile == "") return;
 
-        using FileStream stream = new FileStream(_rater.CurrentFile, FileMode.Open, FileAccess.Read);
-        pictureBox1.Image = Image.FromStream(stream);
-        if (chkRotateRight.Checked) pictureBox1.Image.RotateFlip(RotateFlipType.Rotate90FlipNone);
+        pictureBox1.Image = ImageExtensions.GetUnlockedImageFromFile(_rater.CurrentFile, 
+            chkRotateRight.Checked ? RotateFlipType.Rotate90FlipNone : RotateFlipType.RotateNoneFlipNone);
     }
 
 

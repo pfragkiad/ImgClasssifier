@@ -19,7 +19,7 @@ public class RatingIndex(int rating, int index) : IComparable<RatingIndex>
 
     public override string ToString()
     {
-        return $"{rating}_{index}";
+        return $"{rating:000}_{index:0000}";
     }
 
     public int CompareTo(RatingIndex? other)

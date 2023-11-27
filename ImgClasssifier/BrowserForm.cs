@@ -65,8 +65,9 @@ public partial class BrowserForm : Form
     //TODO: Reload a single photo (right-click)
     public void UpdateBrowser()
     {
-        var ratedImageFiles = //UnratedRatedFile.GetRatedImagesPaths(_rater.LogFile!, _rater.TargetBasePath!); 
-            _rater.GetRatedImagesPaths();
+        var ratedImageFiles = 
+            //UnratedRatedFile.GetRatedImagesPaths(_rater.LogFile!, _rater.TargetBasePath!); 
+           _rater.GetRatedImagesPaths();
 
         RotateFlipType rotate = _options.RotateForBrowsing;
         string cacheDirectory = _options.CachedThumbnailsDirectory ?? Path.Combine(_rater.TargetBasePath!, "cached");

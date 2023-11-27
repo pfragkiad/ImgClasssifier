@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using System;
 using System.CodeDom;
 using System.Configuration;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Text.RegularExpressions;
 using static ImgClasssifier.Images.ImageExtensions;
 
@@ -37,11 +39,14 @@ public partial class PictureRater
     string _currentFile = "";
     public string CurrentFile { get => _currentFile; }
 
-    public void Reset()
+    public void Reset(bool resetRatedFiles)
     {
         _currentIndex = -1;
         _currentFile = "";
         _unratedFilePaths = [];
+
+        if (resetRatedFiles)
+            _ratedFiles = [];
 
         ResetCompleted?.Invoke(this, EventArgs.Empty);
     }
@@ -101,7 +106,6 @@ public partial class PictureRater
         if (!Directory.Exists(UnregisteredPath)) Directory.CreateDirectory(UnregisteredPath);
 
         //List<string> excludedDirectoryNames = _configuration.GetSection("excludedDirectoryNames").GetChildren().Select(c => c.Value!).ToList();
-
         //bool searchSubDirectories = _configuration.GetValue<bool?>("searchSubDirectories") ?? true;
     }
 
@@ -114,9 +118,16 @@ public partial class PictureRater
     public int UnratedImagesCount { get => _unratedFilePaths.Count; }
 
 
-    //TODO: FINISH _ratedFiles in every place in the file.
     List<UnratedRatedFile> _ratedFiles = [];
     public List<UnratedRatedFile> RatedFiles { get => _ratedFiles; }
+
+    public List<string> GetRatedImagesPaths() =>
+        _ratedFiles
+        .Select(r => Path.Combine(TargetBasePath!, r.RatedFilename))
+        .ToList();
+    //UnratedRatedFile.GetRatedImagesPaths(LogFile!, TargetBasePath!);
+
+
     public int RatedImagesCount { get => _ratedFiles.Count; }
 
 
@@ -127,7 +138,7 @@ public partial class PictureRater
         //txtLog.Clear();
         LoadingUnratedFiles?.Invoke(this, EventArgs.Empty);
 
-        Reset();
+        Reset(resetRatedFiles: true);
 
         //updates the _unratedFilePaths
         LoadUnratedFilePaths();
@@ -194,7 +205,6 @@ public partial class PictureRater
 
     private void MoveUnregisteredRatedFiles()
     {
-        //HashSet<string> ratedImages = UnratedRatedFile.GetRatedImagesFilenamesFromLogFile(LogFile!);
         HashSet<string> registeredRatedFiles = _ratedFiles.Select(r => r.RatedFilename).ToHashSet();
 
         string[] unregisteredFiles = Directory
@@ -229,7 +239,7 @@ public partial class PictureRater
     {
         if (_unratedFilePaths.Count == 0)
         {
-            Reset();
+            Reset(resetRatedFiles: false);
             return;
         }
 
@@ -242,40 +252,46 @@ public partial class PictureRater
         ProceededToNextFile?.Invoke(this, EventArgs.Empty);
     }
 
-    public void SaveCurrentFile(int rating)
-    {
-        if (_currentFile == "") return;
-
+    public void SaveCurrentFile(int rating) =>
         SaveUnratedImageAsRated(_currentFile, rating);
-    }
 
     public event EventHandler<FileMoveFailedEventArgs>? MoveImageFailed;
 
     private void SaveUnratedImageAsRated(string fileName, int rating)
     {
+        if (string.IsNullOrWhiteSpace(fileName) || !File.Exists(fileName)) return;
+
         try
         {
             string extension = Path.GetExtension(fileName);
 
-            string targetFileNameWithoutCounter = $"{rating:000}";
-            string[] existingFiles = Directory.GetFiles(TargetBasePath!, $"{targetFileNameWithoutCounter}_*{extension}");
-            int counter = existingFiles.Length > 0 ?
-                existingFiles.Select(f => int.Parse(Path.GetFileNameWithoutExtension(f)[4..])).Max() + 1 : 1;
+            //string targetFileNameWithoutCounter = $"{rating:000}";
+            //string[] existingFiles = Directory.GetFiles(TargetBasePath!, $"{targetFileNameWithoutCounter}_*{extension}");
+            //int counter = existingFilePaths.Length > 0 ?
+            //    existingFilePaths.Select(f => int.Parse(Path.GetFileNameWithoutExtension(f)[4..])).Max() + 1 : 1;
+            //string targetFilename = $"{targetFileNameWithoutCounter}_{index:0000}{extension}";
 
-            if (counter > 9999) throw new InvalidOperationException("Cannot have more than 9999 images per rating.");
+            RatingIndex ratingIndex = new(rating, _ratedFiles
+                .Select(r => r.GetRatingIndex())
+                .Where(r => r is not null && r.Rating == rating)
+                .Select(r => r!.Index)
+                .DefaultIfEmpty()
+                .Max() + 1);
+            string targetFilename = $"{ratingIndex}{extension}";
 
-            string targetFilename = $"{targetFileNameWithoutCounter}_{counter:0000}{extension}";
+            //if (ratingIndex.Index > 9999) throw new InvalidOperationException("Cannot have more than 9999 images per rating.");
+
             string targetPath = Path.Combine(TargetBasePath!, targetFilename);
             File.Move(fileName, targetPath);
 
-            //append to log file
-            var writer = File.AppendText(LogFile!);
-            writer.WriteLine($"{Path.GetFileName(fileName)}\t{targetFilename}");
-            writer.Flush(); writer.Close();
+            //update ratedFiles
+            UnratedRatedFile newRecord = new(Path.GetFileName(fileName), targetFilename);
+            _ratedFiles.Add(newRecord);
 
-            //update the internal collection
-            _ratedFiles.Add(new UnratedRatedFile(Path.GetFileName(fileName), targetFilename));
+            //append new record to log file
+            File.AppendAllText(LogFile!, $"{newRecord}\r\n");
 
+            //update unratedFiles
             _unratedFilePaths.Remove(fileName);
             _currentIndex--;
         }
@@ -314,7 +330,6 @@ public partial class PictureRater
 
     #region Log file
 
-    public List<string> GetRatedImagesPaths() => UnratedRatedFile.GetRatedImagesPaths(LogFile!, TargetBasePath!);
 
     private void BackupLogFile()
     {
@@ -335,18 +350,32 @@ public partial class PictureRater
 
     public bool ChangeRating(string ratedFilename, int newRating, int? newIndex = null)
     {
-        var oldRatingIndex = RatingIndex.FromFilename(ratedFilename);
+        int iRated = _ratedFiles.FindIndex(r => r.RatedFilename == ratedFilename);
+        if (iRated == -1) //unregistered case SHOULD NOT HAPPEN
+            throw new InvalidOperationException(ratedFilename + " is unregistered!");
+
+        var oldRatingIndex = _ratedFiles[iRated].GetRatingIndex(); //RatingIndex.FromFilename(ratedFilename);
         if (oldRatingIndex is null)
-            //throw new InvalidOperationException($"The filename is not in rater index format ('{ratedFilename}').");
-            return false; //cannot change
+            throw new InvalidOperationException($"The filename is not in rater index format ('{ratedFilename}').");
+        //return false; //cannot change
 
         if (newRating == oldRatingIndex.Rating && newIndex == oldRatingIndex.Index)
             return false; //no change
 
-        //if we arrive here we can continue
-        //there is no state for rating/unrated files - we should load all records -
-        //remove the old one, add the new one and resave the file
 
+        string extension = Path.GetExtension(ratedFilename);
+
+        if (newIndex.HasValue)
+        {
+            _ratedFiles[iRated] = new UnratedRatedFile(
+                _ratedFiles[iRated].UnratedFilename, $"{newRating:000}_{newIndex:0000}{extension}");
+        } //ELSE GET ALL COUNT
+
+
+        //ResetSortOrderInLogfile();
+
+
+        //SHOULD REMOVE CACHED FILE
 
 
 
