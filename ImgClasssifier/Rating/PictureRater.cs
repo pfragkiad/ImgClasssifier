@@ -144,8 +144,10 @@ public partial class PictureRater
         //updates the _unratedFilePaths
         LoadUnratedFilePaths();
 
+
         //load rated files
         _ratedFiles = UnratedRatedFile.FromLogfile(LogFile!);
+       // Dictionary<string, string> d = _ratedFiles.ToDictionary(r => r.UnratedFilename, r => r.UnratedFilename);
 
         //remove already rated images from _images
         RemoveDuplicateAlreadyRatedFiles();
@@ -153,7 +155,19 @@ public partial class PictureRater
         //check for orphan rated files
         MoveUnregisteredRatedFiles();
 
+        //remove entries that cannot been found in the file system
+        RemoveOrphanRatedEntries();
+
         GotoNextFile();
+    }
+
+    private void RemoveOrphanRatedEntries()
+    {
+        int previousCount = _ratedFiles.Count;
+        _ratedFiles = _ratedFiles.Where(r=> File.Exists(Path.Combine(TargetBasePath,r.RatedFilename))).ToList();
+        int currentCount = _ratedFiles.Count;
+        if (currentCount < previousCount)
+            SaveLogFile(true);
     }
 
     private void LoadUnratedFilePaths()
@@ -172,6 +186,8 @@ public partial class PictureRater
                     && !ExcludedDirectoryNames.Contains(Path.GetFileName(Path.GetDirectoryName(f)!));
             })
             .ToList();
+
+
 
     }
 
@@ -378,9 +394,12 @@ public partial class PictureRater
 
         _ratedFiles.RemoveAt(iRated);
 
+
         string newFilename = newRatingIndex.ToFilename(extension);
         var newRatedFile = new UnratedRatedFile(ratedFile.UnratedFilename, newFilename);
         _ratedFiles.Add(newRatedFile);
+
+        File.Move(Path.Combine(TargetBasePath,ratedFilename), Path.Combine(TargetBasePath,newFilename));
 
         SaveLogFile(false);
 

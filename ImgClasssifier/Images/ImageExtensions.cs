@@ -94,7 +94,7 @@ public static class ImageExtensions
         return cachedFilePath;
     }
 
-    public static string GetRenamedCachedFilename(string newRatedFilename, string oldRatedFilename)
+    public static string GetRenamedCachedFileName(string newRatedFilename, string oldRatedFilename)
     {
         var tokens = oldRatedFilename.Split('_');
         return string.Join('_', [Path.GetFileNameWithoutExtension(newRatedFilename),..tokens.Skip(2)]);

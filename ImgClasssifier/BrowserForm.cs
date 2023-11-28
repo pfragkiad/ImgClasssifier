@@ -34,15 +34,15 @@ public partial class BrowserForm : Form
         if (listView1.SelectedItems.Count == 0) return;
 
         var selectedItem = listView1.SelectedItems[0];
-        var currentRating = RatingIndex.FromFilename(selectedItem.Text);
+        var currentRating = RatingIndex.FromFileName(selectedItem.Text);
         trackBar1.Value = currentRating?.Rating ?? 0;
     }
 
     private void ListDragDropper_ItemMoved(object? sender, ListItemMovedEventArgs e)
     {
-        var currentRating = RatingIndex.FromFilename(e.Item!.Text);
-        var previousRating = e.Previous is not null ? RatingIndex.FromFilename(e.Previous!.Text) : null;
-        var nextRating = e.Next is not null ? RatingIndex.FromFilename(e.Next!.Text) : null;
+        var currentRating = RatingIndex.FromFileName(e.Item!.Text);
+        var previousRating = e.Previous is not null ? RatingIndex.FromFileName(e.Previous!.Text) : null;
+        var nextRating = e.Next is not null ? RatingIndex.FromFileName(e.Next!.Text) : null;
 
         if (previousRating is not null && nextRating is not null &&
             previousRating >= nextRating)
@@ -120,45 +120,59 @@ public partial class BrowserForm : Form
         if (listView1.SelectedItems.Count == 0) return;
 
         var selectedItem = listView1.SelectedItems[0];
-        var currentRating = RatingIndex.FromFilename(selectedItem.Text);
-        if (currentRating is null) return;
-
-        if (currentRating.Rating == trackBar1.Value) return; //no update
-
-
-        //remove cache file
-
-        if(!Directory.Exists(CacheDirectory)) return; //////
 
         Cursor.Current = Cursors.WaitCursor;
         Application.UseWaitCursor = true;
 
-        string cachedFile = ImageExtensions.GetCachedFilePath(
-            selectedItem.Text,
-            imageList1.ImageSize.Width,
-            imageList1.ImageSize.Height,
-            listView1.BackColor,
-            _options.RotateForBrowsing,
-            CacheDirectory);
 
-        UnratedRatedFile newRatedFile = _rater.ChangeRatingAndGetNewRatedFile(selectedItem.Text,trackBar1.Value);
-
-        //update listitem text
-        selectedItem.Text = newRatedFile.RatedFilename;
-
-        //update cached file
-        string newCachedFile = ImageExtensions.GetRenamedCachedFilename(newRatedFile.RatedFilename, cachedFile);
-        File.Move(cachedFile,Path.Combine(CacheDirectory,newCachedFile));
-
-        UpdateBrowser(); //review this
-
-        var updatedListItem = listView1.Items.Cast<ListViewItem>().First(item => item.Text == newRatedFile.RatedFilename);
-        updatedListItem.Selected = true;
-        updatedListItem.EnsureVisible();
+        ChangeRating(selectedItem, trackBar1.Value, true);
 
         Cursor.Current = Cursors.Default;
         Application.UseWaitCursor = false;
 
+
+    }
+
+    private void ChangeRating(ListViewItem selectedItem, int newRating, bool refreshBrowser)
+    {
+        string currentFilename = selectedItem.Text;
+
+        var currentRating = RatingIndex.FromFileName(currentFilename);
+        if (currentRating is null) return;
+        if (currentRating.Rating == trackBar1.Value) return; //no update
+
+        UnratedRatedFile newRatedFile = _rater.ChangeRatingAndGetNewRatedFile(currentFilename, newRating);
+
+        //remove cache file
+        if (Directory.Exists(CacheDirectory))
+        {
+            string currentCacheFilePath = ImageExtensions.GetCachedFilePath(
+                currentFilename,
+                imageList1.ImageSize.Width,
+                imageList1.ImageSize.Height,
+                listView1.BackColor,
+                _options.RotateForBrowsing,
+                CacheDirectory);
+
+            //update cached file
+            string newCachedFile = ImageExtensions.GetRenamedCachedFileName(newRatedFile.RatedFilename, currentCacheFilePath);
+            File.Move(currentCacheFilePath, Path.Combine(CacheDirectory, newCachedFile));
+        }
+
+        if (!refreshBrowser)
+            //update listitem text only
+            selectedItem.Text = newRatedFile.RatedFilename;
+        else
+        {
+            UpdateBrowser(); //review this
+            var updatedListItem = listView1.Items.Cast<ListViewItem>().First(item => item.Text == newRatedFile.RatedFilename);
+            updatedListItem.Selected = true;
+            updatedListItem.EnsureVisible();
+        }
+    }
+
+    private void btnRerateUniformly_Click(object sender, EventArgs e)
+    {
 
     }
 }

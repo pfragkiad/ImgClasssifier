@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ImgClasssifier;
 
 //TODO: Remove rated photo.
-//TODO: Change rating.
 //TODO: Reclassify (change all ratings) -> 
 //TODO: Reclassify (compare mode).
 
@@ -77,7 +76,12 @@ public partial class Form1 : Form
 
     private void btnRefresh_Click(object sender, EventArgs e)
     {
+        Cursor.Current = Cursors.WaitCursor;
+        Application.UseWaitCursor = true;
+
         _rater.LoadUnratedFilesAndCheckRatedFiles();
+        Cursor.Current = Cursors.Default;
+        Application.UseWaitCursor = false;
     }
 
     private void btnSave_Click(object sender, EventArgs e)

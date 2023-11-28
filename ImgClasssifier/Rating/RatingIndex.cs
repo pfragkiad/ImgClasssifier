@@ -7,7 +7,7 @@ public class RatingIndex(int rating, int index) : IComparable<RatingIndex>
     public int Rating { get; } = rating;
     public int Index { get; } = index;
 
-    public static RatingIndex? FromFilename(string filename)
+    public static RatingIndex? FromFileName(string filename)
     {
         Match m = Regex.Match(filename, @"^(?<rating>\d{3})_(?<index>\d{4})\.");
         if (!m.Success) return null;

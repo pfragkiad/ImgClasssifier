@@ -24,7 +24,7 @@ public class UnratedRatedFile : IComparable<UnratedRatedFile>
         set
         {
             _ratedFilename = value;
-            RatingIndex = RatingIndex.FromFilename(_ratedFilename);
+            RatingIndex = RatingIndex.FromFileName(_ratedFilename);
         }
     }
 

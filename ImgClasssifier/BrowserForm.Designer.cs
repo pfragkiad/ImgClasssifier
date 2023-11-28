@@ -36,6 +36,7 @@
             trackBar1 = new TrackBar();
             lblReport = new Label();
             toolTip1 = new ToolTip(components);
+            btnRerateUniformly = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -55,6 +56,7 @@
             // 
             // splitContainer1.Panel2
             // 
+            splitContainer1.Panel2.Controls.Add(btnRerateUniformly);
             splitContainer1.Panel2.Controls.Add(btnChangeRating);
             splitContainer1.Panel2.Controls.Add(trackBar1);
             splitContainer1.Panel2.Controls.Add(lblReport);
@@ -82,7 +84,7 @@
             // 
             // btnChangeRating
             // 
-            btnChangeRating.Location = new Point(15, 107);
+            btnChangeRating.Location = new Point(84, 71);
             btnChangeRating.Name = "btnChangeRating";
             btnChangeRating.Size = new Size(105, 23);
             btnChangeRating.TabIndex = 5;
@@ -92,11 +94,14 @@
             // 
             // trackBar1
             // 
+            trackBar1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             trackBar1.Location = new Point(15, 56);
             trackBar1.Maximum = 100;
             trackBar1.Name = "trackBar1";
-            trackBar1.Size = new Size(282, 45);
+            trackBar1.Orientation = Orientation.Vertical;
+            trackBar1.Size = new Size(45, 622);
             trackBar1.TabIndex = 4;
+            trackBar1.TickStyle = TickStyle.Both;
             trackBar1.Value = 50;
             trackBar1.ValueChanged += trackBar1_ValueChanged;
             // 
@@ -108,6 +113,16 @@
             lblReport.Size = new Size(38, 15);
             lblReport.TabIndex = 2;
             lblReport.Text = "label1";
+            // 
+            // btnRerateUniformly
+            // 
+            btnRerateUniformly.Location = new Point(84, 124);
+            btnRerateUniformly.Name = "btnRerateUniformly";
+            btnRerateUniformly.Size = new Size(105, 23);
+            btnRerateUniformly.TabIndex = 6;
+            btnRerateUniformly.Text = "Rate uniformly";
+            btnRerateUniformly.UseVisualStyleBackColor = true;
+            btnRerateUniformly.Click += btnRerateUniformly_Click;
             // 
             // BrowserForm
             // 
@@ -135,5 +150,6 @@
         private Button btnChangeRating;
         private TrackBar trackBar1;
         private ToolTip toolTip1;
+        private Button btnRerateUniformly;
     }
 }
