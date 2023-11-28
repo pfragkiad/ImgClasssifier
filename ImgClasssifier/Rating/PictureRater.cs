@@ -122,8 +122,8 @@ public partial class PictureRater
     List<UnratedRatedFile> _ratedFiles = [];
     public List<UnratedRatedFile> RatedFiles { get => _ratedFiles; }
 
-    public List<string> GetRatedImagesPaths() =>
-        _ratedFiles
+    public List<string> GetRatedImagesPaths(bool reorder) =>
+        (reorder ? _ratedFiles.OrderBy(r=>r.RatedFilename).ToList() : _ratedFiles)
         .Select(r => Path.Combine(TargetBasePath!, r.RatedFilename))
         .ToList();
     //UnratedRatedFile.GetRatedImagesPaths(LogFile!, TargetBasePath!);
@@ -379,7 +379,7 @@ public partial class PictureRater
         _ratedFiles.RemoveAt(iRated);
 
         string newFilename = newRatingIndex.ToFilename(extension);
-        var newRatedFile = new UnratedRatedFile(ratedFile.UnratedFilename, newFilename)
+        var newRatedFile = new UnratedRatedFile(ratedFile.UnratedFilename, newFilename);
         _ratedFiles.Add(newRatedFile);
 
         SaveLogFile(false);

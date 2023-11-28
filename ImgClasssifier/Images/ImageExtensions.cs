@@ -39,7 +39,6 @@ public static class ImageExtensions
 
     public static List<Thumbnail> GetThumbnails(IEnumerable<string> filePaths, int thumbnailWidth, int thumbnailHeight, Color backColor, RotateFlipType rotate = RotateFlipType.RotateNoneFlipNone, string? cacheDirectory = null)
     {
-        //key is the filename
         ConcurrentBag<Thumbnail> images = new();
 
         if (!string.IsNullOrWhiteSpace(cacheDirectory) && (Directory.Exists(cacheDirectory) || Directory.Exists(Path.GetDirectoryName(cacheDirectory))))
@@ -50,9 +49,7 @@ public static class ImageExtensions
                   ratedFilePath =>
                   {
                       string key = Path.GetFileName(ratedFilePath);
-                      string cachedFilename = Path.GetFileNameWithoutExtension(ratedFilePath) +
-                           $"_{thumbnailWidth}_{thumbnailHeight}_{backColor.ToArgb():X}_{(int)rotate:0}" + Path.GetExtension(ratedFilePath);
-                      string cachedFilePath = Path.Combine(cacheDirectory, cachedFilename);
+                      string cachedFilePath = GetCachedFilePath(ratedFilePath, thumbnailWidth, thumbnailHeight, backColor, rotate, cacheDirectory);
 
                       if (!File.Exists(cachedFilePath))
                       {
@@ -89,6 +86,19 @@ public static class ImageExtensions
         return [.. images.OrderBy(t => t.Key)];
     }
 
+    public static string GetCachedFilePath(string ratedFilePath, int thumbnailWidth, int thumbnailHeight, Color backColor, RotateFlipType rotate, string cacheDirectory)
+    {
+        string cachedFilename = Path.GetFileNameWithoutExtension(ratedFilePath) +
+             $"_{thumbnailWidth}_{thumbnailHeight}_{backColor.ToArgb():X}_{(int)rotate:0}" + Path.GetExtension(ratedFilePath);
+        string cachedFilePath = Path.Combine(cacheDirectory, cachedFilename);
+        return cachedFilePath;
+    }
+
+    public static string GetRenamedCachedFilename(string newRatedFilename, string oldRatedFilename)
+    {
+        var tokens = oldRatedFilename.Split('_');
+        return string.Join('_', [Path.GetFileNameWithoutExtension(newRatedFilename),..tokens.Skip(2)]);
+    }
 
 
     public static Image FitImage(Image image, int newWidth, int newHeight, Color backColor)

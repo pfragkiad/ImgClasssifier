@@ -25,7 +25,7 @@ public static class ListViewExtensions
         )
     {
         listView.Items.Clear();
-        listView.SuspendLayout();
+        listView.BeginUpdate();
 
         int thumbnailWidth = imageList.ImageSize.Width;
         int thumbnailHeight = imageList.ImageSize.Height;
@@ -38,6 +38,7 @@ public static class ListViewExtensions
             .ToArray();
 
         listView.Items.AddRange(listViewItems);
-        listView.ResumeLayout();
+        listView.EndUpdate();
     }
+
 }

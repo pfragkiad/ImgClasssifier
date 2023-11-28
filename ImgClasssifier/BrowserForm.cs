@@ -1,9 +1,11 @@
 ﻿
 using ImgClasssifier.ControlExtensions;
+using ImgClasssifier.Images;
 using ImgClasssifier.Rating;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
+using System.Security.Policy;
 
 namespace ImgClasssifier;
 
@@ -22,6 +24,18 @@ public partial class BrowserForm : Form
         _options = options.Value;
         _listDragDropper = new ListViewListItemDragDropper(listView1);
         _listDragDropper.ItemMoved += ListDragDropper_ItemMoved;
+
+        toolTip1.SetToolTip(trackBar1, $"{trackBar1.Value}");
+        listView1.SelectedIndexChanged += ListView1_SelectedIndexChanged;
+    }
+
+    private void ListView1_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        if (listView1.SelectedItems.Count == 0) return;
+
+        var selectedItem = listView1.SelectedItems[0];
+        var currentRating = RatingIndex.FromFilename(selectedItem.Text);
+        trackBar1.Value = currentRating?.Rating ?? 0;
     }
 
     private void ListDragDropper_ItemMoved(object? sender, ListItemMovedEventArgs e)
@@ -60,21 +74,23 @@ public partial class BrowserForm : Form
 
     ListViewListItemDragDropper? _listDragDropper;
 
+    public string? CacheDirectory { get; set; }
+
 
     //TODO: Fix drag and drop item.
     //TODO: Reload a single photo (right-click)
     public void UpdateBrowser()
     {
-        var ratedImageFiles = 
-            //UnratedRatedFile.GetRatedImagesPaths(_rater.LogFile!, _rater.TargetBasePath!); 
-           _rater.GetRatedImagesPaths();
+        var ratedImageFiles =
+           //UnratedRatedFile.GetRatedImagesPaths(_rater.LogFile!, _rater.TargetBasePath!); 
+           _rater.GetRatedImagesPaths(true);
 
         RotateFlipType rotate = _options.RotateForBrowsing;
-        string cacheDirectory = _options.CachedThumbnailsDirectory ?? Path.Combine(_rater.TargetBasePath!, "cached");
+        CacheDirectory = _options.CachedThumbnailsDirectory ?? Path.Combine(_rater.TargetBasePath!, "cached");
 
         Stopwatch w = Stopwatch.StartNew();
 
-        listView1.AddImageListViewItems(imageList1, ratedImageFiles, rotate, cacheDirectory);
+        listView1.AddImageListViewItems(imageList1, ratedImageFiles, rotate, CacheDirectory);
 
         w.Stop();
         if (w.ElapsedMilliseconds > 5000)
@@ -92,5 +108,57 @@ public partial class BrowserForm : Form
 
         //    }
         //}
+    }
+
+    private void trackBar1_ValueChanged(object sender, EventArgs e)
+    {
+        toolTip1.SetToolTip(trackBar1, $"{trackBar1.Value}");
+    }
+
+    private void btnChangeRating_Click(object sender, EventArgs e)
+    {
+        if (listView1.SelectedItems.Count == 0) return;
+
+        var selectedItem = listView1.SelectedItems[0];
+        var currentRating = RatingIndex.FromFilename(selectedItem.Text);
+        if (currentRating is null) return;
+
+        if (currentRating.Rating == trackBar1.Value) return; //no update
+
+
+        //remove cache file
+
+        if(!Directory.Exists(CacheDirectory)) return; //////
+
+        Cursor.Current = Cursors.WaitCursor;
+        Application.UseWaitCursor = true;
+
+        string cachedFile = ImageExtensions.GetCachedFilePath(
+            selectedItem.Text,
+            imageList1.ImageSize.Width,
+            imageList1.ImageSize.Height,
+            listView1.BackColor,
+            _options.RotateForBrowsing,
+            CacheDirectory);
+
+        UnratedRatedFile newRatedFile = _rater.ChangeRatingAndGetNewRatedFile(selectedItem.Text,trackBar1.Value);
+
+        //update listitem text
+        selectedItem.Text = newRatedFile.RatedFilename;
+
+        //update cached file
+        string newCachedFile = ImageExtensions.GetRenamedCachedFilename(newRatedFile.RatedFilename, cachedFile);
+        File.Move(cachedFile,Path.Combine(CacheDirectory,newCachedFile));
+
+        UpdateBrowser(); //review this
+
+        var updatedListItem = listView1.Items.Cast<ListViewItem>().First(item => item.Text == newRatedFile.RatedFilename);
+        updatedListItem.Selected = true;
+        updatedListItem.EnsureVisible();
+
+        Cursor.Current = Cursors.Default;
+        Application.UseWaitCursor = false;
+
+
     }
 }

@@ -32,12 +32,15 @@
             splitContainer1 = new SplitContainer();
             listView1 = new ListView();
             imageList1 = new ImageList(components);
+            btnChangeRating = new Button();
+            trackBar1 = new TrackBar();
             lblReport = new Label();
-            progressBar1 = new ProgressBar();
+            toolTip1 = new ToolTip(components);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             SuspendLayout();
             // 
             // splitContainer1
@@ -52,8 +55,9 @@
             // 
             // splitContainer1.Panel2
             // 
+            splitContainer1.Panel2.Controls.Add(btnChangeRating);
+            splitContainer1.Panel2.Controls.Add(trackBar1);
             splitContainer1.Panel2.Controls.Add(lblReport);
-            splitContainer1.Panel2.Controls.Add(progressBar1);
             splitContainer1.Size = new Size(1154, 722);
             splitContainer1.SplitterDistance = 810;
             splitContainer1.TabIndex = 1;
@@ -63,6 +67,7 @@
             listView1.Dock = DockStyle.Fill;
             listView1.LargeImageList = imageList1;
             listView1.Location = new Point(0, 0);
+            listView1.MultiSelect = false;
             listView1.Name = "listView1";
             listView1.Size = new Size(810, 722);
             listView1.TabIndex = 0;
@@ -75,23 +80,34 @@
             imageList1.ImageSize = new Size(128, 256);
             imageList1.TransparentColor = Color.Transparent;
             // 
+            // btnChangeRating
+            // 
+            btnChangeRating.Location = new Point(15, 107);
+            btnChangeRating.Name = "btnChangeRating";
+            btnChangeRating.Size = new Size(105, 23);
+            btnChangeRating.TabIndex = 5;
+            btnChangeRating.Text = "Change Rating";
+            btnChangeRating.UseVisualStyleBackColor = true;
+            btnChangeRating.Click += btnChangeRating_Click;
+            // 
+            // trackBar1
+            // 
+            trackBar1.Location = new Point(15, 56);
+            trackBar1.Maximum = 100;
+            trackBar1.Name = "trackBar1";
+            trackBar1.Size = new Size(282, 45);
+            trackBar1.TabIndex = 4;
+            trackBar1.Value = 50;
+            trackBar1.ValueChanged += trackBar1_ValueChanged;
+            // 
             // lblReport
             // 
             lblReport.AutoSize = true;
-            lblReport.Location = new Point(15, 100);
+            lblReport.Location = new Point(15, 20);
             lblReport.Name = "lblReport";
             lblReport.Size = new Size(38, 15);
             lblReport.TabIndex = 2;
             lblReport.Text = "label1";
-            // 
-            // progressBar1
-            // 
-            progressBar1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            progressBar1.Location = new Point(15, 56);
-            progressBar1.Name = "progressBar1";
-            progressBar1.Size = new Size(302, 23);
-            progressBar1.TabIndex = 1;
-            progressBar1.Visible = false;
             // 
             // BrowserForm
             // 
@@ -106,6 +122,7 @@
             splitContainer1.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)trackBar1).EndInit();
             ResumeLayout(false);
         }
 
@@ -114,7 +131,9 @@
         private SplitContainer splitContainer1;
         private ListView listView1;
         private ImageList imageList1;
-        private ProgressBar progressBar1;
         private Label lblReport;
+        private Button btnChangeRating;
+        private TrackBar trackBar1;
+        private ToolTip toolTip1;
     }
 }
