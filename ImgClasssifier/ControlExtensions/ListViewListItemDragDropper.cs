@@ -5,6 +5,7 @@ public class ListViewListItemDragDropper
     private readonly ListView _listView;
 
     private ListItemGraph _graph;
+    public ListItemGraph Graph { get => _graph;  } 
 
     public ListViewListItemDragDropper(ListView listView)
     {

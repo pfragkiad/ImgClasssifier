@@ -32,11 +32,12 @@
             splitContainer1 = new SplitContainer();
             listView1 = new ListView();
             imageList1 = new ImageList(components);
+            btnRerateUniformly = new Button();
             btnChangeRating = new Button();
             trackBar1 = new TrackBar();
             lblReport = new Label();
             toolTip1 = new ToolTip(components);
-            btnRerateUniformly = new Button();
+            btnDelete = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -56,6 +57,7 @@
             // 
             // splitContainer1.Panel2
             // 
+            splitContainer1.Panel2.Controls.Add(btnDelete);
             splitContainer1.Panel2.Controls.Add(btnRerateUniformly);
             splitContainer1.Panel2.Controls.Add(btnChangeRating);
             splitContainer1.Panel2.Controls.Add(trackBar1);
@@ -81,6 +83,16 @@
             imageList1.ColorDepth = ColorDepth.Depth32Bit;
             imageList1.ImageSize = new Size(128, 256);
             imageList1.TransparentColor = Color.Transparent;
+            // 
+            // btnRerateUniformly
+            // 
+            btnRerateUniformly.Location = new Point(84, 124);
+            btnRerateUniformly.Name = "btnRerateUniformly";
+            btnRerateUniformly.Size = new Size(105, 23);
+            btnRerateUniformly.TabIndex = 6;
+            btnRerateUniformly.Text = "Rate uniformly";
+            btnRerateUniformly.UseVisualStyleBackColor = true;
+            btnRerateUniformly.Click += btnRerateUniformly_Click;
             // 
             // btnChangeRating
             // 
@@ -114,15 +126,15 @@
             lblReport.TabIndex = 2;
             lblReport.Text = "label1";
             // 
-            // btnRerateUniformly
+            // btnDelete
             // 
-            btnRerateUniformly.Location = new Point(84, 124);
-            btnRerateUniformly.Name = "btnRerateUniformly";
-            btnRerateUniformly.Size = new Size(105, 23);
-            btnRerateUniformly.TabIndex = 6;
-            btnRerateUniformly.Text = "Rate uniformly";
-            btnRerateUniformly.UseVisualStyleBackColor = true;
-            btnRerateUniformly.Click += btnRerateUniformly_Click;
+            btnDelete.Location = new Point(209, 218);
+            btnDelete.Name = "btnDelete";
+            btnDelete.Size = new Size(105, 23);
+            btnDelete.TabIndex = 7;
+            btnDelete.Text = "Delete";
+            btnDelete.UseVisualStyleBackColor = true;
+            btnDelete.Click += btnDelete_Click;
             // 
             // BrowserForm
             // 
@@ -151,5 +163,6 @@
         private TrackBar trackBar1;
         private ToolTip toolTip1;
         private Button btnRerateUniformly;
+        private Button btnDelete;
     }
 }

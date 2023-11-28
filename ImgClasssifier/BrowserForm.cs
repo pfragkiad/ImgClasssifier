@@ -133,6 +133,41 @@ public partial class BrowserForm : Form
 
     }
 
+    private void DeleteRatingFile(ListViewItem selectedItem)
+    {
+        string currentFilename = selectedItem.Text;
+
+        var items = listView1.Items.Cast<ListViewItem>().OrderBy(item => item.Position.Y).ThenBy(item => item.Position.X).ToList();
+        int index = items.IndexOf(selectedItem);
+
+        ListViewItem next = index < items.Count - 1 ? listView1.Items[index + 1] : listView1.Items[index - 1];
+
+
+        //delete item
+        _rater.DeleteRatingFile(currentFilename);
+
+        //remove cache file
+        if (Directory.Exists(CacheDirectory))
+        {
+            string currentCacheFilePath = ImageExtensions.GetCachedFilePath(
+                currentFilename,
+                imageList1.ImageSize.Width,
+                imageList1.ImageSize.Height,
+                listView1.BackColor,
+                _options.RotateForBrowsing,
+                CacheDirectory);
+
+            File.Delete(currentCacheFilePath);
+        }
+
+        listView1.Items.Remove(selectedItem);
+
+        next.Selected = true;
+        next.EnsureVisible();
+
+
+    }
+
     private void ChangeRating(ListViewItem selectedItem, int newRating, bool refreshBrowser)
     {
         string currentFilename = selectedItem.Text;
@@ -174,5 +209,17 @@ public partial class BrowserForm : Form
     private void btnRerateUniformly_Click(object sender, EventArgs e)
     {
 
+    }
+
+    private void btnDelete_Click(object sender, EventArgs e)
+    {
+        if (listView1.SelectedItems.Count == 0) return;
+        var selectedItem = listView1.SelectedItems[0];
+
+        var reply = MessageBox.Show($"Are you sure you want to delete {selectedItem.Text}?", "PictureRater",MessageBoxButtons.YesNo);
+        if (reply == DialogResult.No) return;
+
+        DeleteRatingFile(selectedItem);
+        
     }
 }

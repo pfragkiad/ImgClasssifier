@@ -123,7 +123,7 @@ public partial class PictureRater
     public List<UnratedRatedFile> RatedFiles { get => _ratedFiles; }
 
     public List<string> GetRatedImagesPaths(bool reorder) =>
-        (reorder ? _ratedFiles.OrderBy(r=>r.RatedFilename).ToList() : _ratedFiles)
+        (reorder ? _ratedFiles.OrderBy(r => r.RatedFilename).ToList() : _ratedFiles)
         .Select(r => Path.Combine(TargetBasePath!, r.RatedFilename))
         .ToList();
     //UnratedRatedFile.GetRatedImagesPaths(LogFile!, TargetBasePath!);
@@ -147,7 +147,7 @@ public partial class PictureRater
 
         //load rated files
         _ratedFiles = UnratedRatedFile.FromLogfile(LogFile!);
-       // Dictionary<string, string> d = _ratedFiles.ToDictionary(r => r.UnratedFilename, r => r.UnratedFilename);
+        // Dictionary<string, string> d = _ratedFiles.ToDictionary(r => r.UnratedFilename, r => r.UnratedFilename);
 
         //remove already rated images from _images
         RemoveDuplicateAlreadyRatedFiles();
@@ -164,7 +164,7 @@ public partial class PictureRater
     private void RemoveOrphanRatedEntries()
     {
         int previousCount = _ratedFiles.Count;
-        _ratedFiles = _ratedFiles.Where(r=> File.Exists(Path.Combine(TargetBasePath,r.RatedFilename))).ToList();
+        _ratedFiles = _ratedFiles.Where(r => File.Exists(Path.Combine(TargetBasePath, r.RatedFilename))).ToList();
         int currentCount = _ratedFiles.Count;
         if (currentCount < previousCount)
             SaveLogFile(true);
@@ -366,6 +366,21 @@ public partial class PictureRater
 
     #endregion
 
+    public void DeleteRatingFile(string ratedFilename)
+    {
+        int iRated = _ratedFiles.FindIndex(r => r.RatedFilename == ratedFilename);
+        if (iRated == -1) //unregistered case SHOULD NOT HAPPEN
+            throw new InvalidOperationException(ratedFilename + " is unregistered!");
+
+        _ratedFiles.RemoveAt(iRated);
+
+        string ratedFilePath = Path.Combine(TargetBasePath!, ratedFilename);
+        if (File.Exists(ratedFilePath))
+            File.Delete(ratedFilePath);
+
+        SaveLogFile(false);
+    }
+
     public UnratedRatedFile ChangeRatingAndGetNewRatedFile(string ratedFilename, int newRating, int? newIndex = null)
     {
         //we need the index in order to update at the same location
@@ -377,7 +392,7 @@ public partial class PictureRater
         UnratedRatedFile ratedFile = _ratedFiles[iRated];
 
         var oldRatingIndex = ratedFile.RatingIndex ?? throw new InvalidOperationException($"The filename is not in rater index format ('{ratedFilename}')."); //RatingIndex.FromFilename(ratedFilename);
-                                                                                                                                                           //return false; //cannot change
+                                                                                                                                                              //return false; //cannot change
         if (newRating == oldRatingIndex.Rating && newIndex == oldRatingIndex.Index)
             return ratedFile; //no change
 
@@ -399,7 +414,7 @@ public partial class PictureRater
         var newRatedFile = new UnratedRatedFile(ratedFile.UnratedFilename, newFilename);
         _ratedFiles.Add(newRatedFile);
 
-        File.Move(Path.Combine(TargetBasePath,ratedFilename), Path.Combine(TargetBasePath,newFilename));
+        File.Move(Path.Combine(TargetBasePath, ratedFilename), Path.Combine(TargetBasePath, newFilename));
 
         SaveLogFile(false);
 
