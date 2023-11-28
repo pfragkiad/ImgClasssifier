@@ -108,7 +108,7 @@ public partial class Form1 : Form
 
     private void btnResetOrderInLogFile_Click(object sender, EventArgs e)
     {
-        _rater.ResetSortOrderInLogfile();
+        _rater.SaveLogFile(true);
         MessageBox.Show("Reset order complete!");
     }
 

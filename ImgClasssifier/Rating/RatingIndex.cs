@@ -17,6 +17,9 @@ public class RatingIndex(int rating, int index) : IComparable<RatingIndex>
             index: int.Parse(m.Groups["index"].Value));
     }
 
+    public string ToFilename(string extensionWithPeriod) =>
+        $"{this}{extensionWithPeriod}";
+
     public override string ToString()
     {
         return $"{rating:000}_{index:0000}";

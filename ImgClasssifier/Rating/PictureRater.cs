@@ -6,6 +6,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using static ImgClasssifier.Images.ImageExtensions;
 
 namespace ImgClasssifier.Rating;
@@ -268,15 +269,10 @@ public partial class PictureRater
             //    existingFilePaths.Select(f => int.Parse(Path.GetFileNameWithoutExtension(f)[4..])).Max() + 1 : 1;
             //string targetFilename = $"{targetFileNameWithoutCounter}_{index:0000}{extension}";
 
-            RatingIndex ratingIndex = new(rating, _ratedFiles
-                .Select(r => r.RatingIndex)
-                .Where(r => r is not null && r.Rating == rating)
-                .Select(r => r!.Index)
-                .DefaultIfEmpty()
-                .Max() + 1);
-            string targetFilename = $"{ratingIndex}{extension}";
+            RatingIndex ratingIndex = GetNewRatingIndex(rating);
+            string targetFilename = ratingIndex.ToFilename(extension);
 
-            //if (ratingIndex.Index > 9999) throw new InvalidOperationException("Cannot have more than 9999 images per rating.");
+            if (ratingIndex.Index > 9999) throw new InvalidOperationException("Cannot have more than 9999 images per rating.");
 
             string targetPath = Path.Combine(TargetBasePath!, targetFilename);
             File.Move(fileName, targetPath);
@@ -296,6 +292,16 @@ public partial class PictureRater
         {
             MoveImageFailed?.Invoke(this, new FileMoveFailedEventArgs(fileName, ex.Message));
         }
+    }
+
+    private RatingIndex GetNewRatingIndex(int rating)
+    {
+        return new(rating, _ratedFiles
+            .Select(r => r.RatingIndex)
+            .Where(r => r is not null && r.Rating == rating)
+            .Select(r => r!.Index)
+            .DefaultIfEmpty()
+            .Max() + 1);
     }
 
     [GeneratedRegex(@"^\d{3}_\d{4}\.", RegexOptions.IgnoreCase)]
@@ -333,50 +339,57 @@ public partial class PictureRater
         File.Copy(LogFile!, Path.Combine(Path.GetDirectoryName(LogFile!)!, Path.GetFileName(LogFile!) + ".bak"), true);
     }
 
-    public void ResetSortOrderInLogfile()
+    public void SaveLogFile(bool reorder)
     {
         BackupLogFile();
 
         //_ratedFiles = [.. _ratedFiles.OrderBy(f => f.RatedFilename)];
-        _ratedFiles = [.. _ratedFiles.Order()];
 
-        UnratedRatedFile.SaveToLogFile(_ratedFiles, LogFile!);
+        UnratedRatedFile.SaveLogFile(reorder ? _ratedFiles.Order() : _ratedFiles, LogFile!);
     }
 
     #endregion
 
-    public bool ChangeRating(string ratedFilename, int newRating, int? newIndex = null)
+    public UnratedRatedFile ChangeRatingAndGetNewRatedFile(string ratedFilename, int newRating, int? newIndex = null)
     {
+        //we need the index in order to update at the same location
+
         int iRated = _ratedFiles.FindIndex(r => r.RatedFilename == ratedFilename);
         if (iRated == -1) //unregistered case SHOULD NOT HAPPEN
             throw new InvalidOperationException(ratedFilename + " is unregistered!");
 
-        var oldRatingIndex = _ratedFiles[iRated].RatingIndex; //RatingIndex.FromFilename(ratedFilename);
-        if (oldRatingIndex is null)
-            throw new InvalidOperationException($"The filename is not in rater index format ('{ratedFilename}').");
-        //return false; //cannot change
+        UnratedRatedFile ratedFile = _ratedFiles[iRated];
 
+        var oldRatingIndex = ratedFile.RatingIndex ?? throw new InvalidOperationException($"The filename is not in rater index format ('{ratedFilename}')."); //RatingIndex.FromFilename(ratedFilename);
+                                                                                                                                                           //return false; //cannot change
         if (newRating == oldRatingIndex.Rating && newIndex == oldRatingIndex.Index)
-            return false; //no change
+            return ratedFile; //no change
 
+        RatingIndex newRatingIndex = newIndex.HasValue ? new(newRating, newIndex.Value) : GetNewRatingIndex(newRating);
+
+        //if newIndex has value then we should check for existence to prevent overwrite of existing file.
+        if (newIndex.HasValue)
+        {
+            bool ratedFileExists = _ratedFiles.FirstOrDefault(r => r.RatingIndex == newRatingIndex) is not null;
+            if (ratedFileExists) throw new InvalidOperationException($"Cannot update rating to '{newRatingIndex}', File already exists.");
+        }
 
         string extension = Path.GetExtension(ratedFilename);
 
-        if (newIndex.HasValue)
-        {
-            _ratedFiles[iRated] = new UnratedRatedFile(
-                _ratedFiles[iRated].UnratedFilename, $"{newRating:000}_{newIndex:0000}{extension}");
-        } //ELSE GET ALL COUNT
+        _ratedFiles.RemoveAt(iRated);
 
+        string newFilename = newRatingIndex.ToFilename(extension);
+        var newRatedFile = new UnratedRatedFile(ratedFile.UnratedFilename, newFilename)
+        _ratedFiles.Add(newRatedFile);
 
-        //ResetSortOrderInLogfile();
+        SaveLogFile(false);
 
+        return newRatedFile;
 
-        //SHOULD REMOVE CACHED FILE
+        //SHOULD RENAME CACHED FILE
+        //RENAME LISTITEM
+        //RESORT LISTITEMS
 
-
-
-        return false;
     }
 
 }

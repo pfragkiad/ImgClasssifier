@@ -66,13 +66,13 @@ public class UnratedRatedFile : IComparable<UnratedRatedFile>
         .Select(f => Path.Combine(targetBasePath, f))
         .ToList();
 
-    public static void SaveToLogFile(IEnumerable<UnratedRatedFile> unratedRatedFiles, string logFile) =>
+    public static void SaveLogFile(IEnumerable<UnratedRatedFile> unratedRatedFiles, string logFile) =>
         File.WriteAllLines(logFile, unratedRatedFiles.Select(e => $"{e}"));
 
     //Allows the use of Order() in a List.
     public int CompareTo(UnratedRatedFile? other)
     {
-        return _ratedFilename.CompareTo(other._ratedFilename);
+        return _ratedFilename.CompareTo(other?._ratedFilename);
     }
 }
 
