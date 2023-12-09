@@ -27,6 +27,24 @@ public partial class BrowserForm : Form
 
         toolTip1.SetToolTip(trackBar1, $"{trackBar1.Value}");
         listView1.SelectedIndexChanged += ListView1_SelectedIndexChanged;
+
+    }
+
+    private void ListView1_Resize(object? sender, EventArgs e)
+    {
+
+        _listDragDropper.RefreshGraph();
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+
+        //function works here - the form seems to be visible here!
+        _listDragDropper.RefreshGraph();
+
+        //the event must be added here
+        listView1.Resize += ListView1_Resize;
     }
 
     private void ListView1_SelectedIndexChanged(object? sender, EventArgs e)
@@ -88,6 +106,7 @@ public partial class BrowserForm : Form
     //TODO: Reload a single photo (right-click)
     public void UpdateBrowser()
     {
+
         var ratedImageFiles =
            //UnratedRatedFile.GetRatedImagesPaths(_rater.LogFile!, _rater.TargetBasePath!); 
            _rater.GetRatedImagesPaths(true);
@@ -103,7 +122,8 @@ public partial class BrowserForm : Form
         if (listView1.Items.Count > 0)
             listView1.Items[0].Selected = true;
 
-        _listDragDropper.RefreshGraph();
+        //the function cannot work if the form is invisible
+        if (Visible) _listDragDropper.RefreshGraph();
 
         w.Stop();
         if (w.ElapsedMilliseconds > 5000)

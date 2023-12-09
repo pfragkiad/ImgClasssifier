@@ -32,46 +32,43 @@ public class ListViewListItemDragDropper
         if (_listView.SelectedItems.Count == 0) return;
 
         HashSet<Keys> handledKeys = new HashSet<Keys> { Keys.Right, Keys.Left, Keys.Up, Keys.Down };
-        if (handledKeys.Contains(e.KeyCode) && _graph.Items is null)
-            _graph.Update();
+        if (!handledKeys.Contains(e.KeyCode)) return;
 
-        if (e.KeyCode == Keys.Right)
+        if (_graph.Items is null) _graph.Update();
+
+        ListViewItem selected =
+            e.KeyCode == Keys.Right || e.KeyCode == Keys.Down ?
+            _graph.GetLastSelectedItem()! : _graph.GetFirstSelectedItem()!;
+        int i = _graph.Items!.IndexOf(selected);
+
+        if (e.KeyCode == Keys.Right && i + 1 < _graph.Items.Count)
         {
-            //var firstSelectedItem = _listView.SelectedItems.Cast<ListViewItem>().First();
-            var firstSelectedItem = _graph.GetFirstSelectedItem()!;
-            int i = _graph.Items.IndexOf(firstSelectedItem);
-            if (i < _graph.Items.Count - 1)
-            {
-                _listView.SelectedItems.Clear();
-                _graph.Items[i + 1].Selected = true;
-                _graph.Items[i + 1].EnsureVisible();
-            }
+            _listView.SelectedItems.Clear();
+            _graph.Items[i + 1].Selected = true;
+            _graph.Items[i + 1].EnsureVisible();
         }
-        else if (e.KeyCode == Keys.Left)
+        else if (e.KeyCode == Keys.Down && i + _graph.ItemsPerRow < _graph.Items.Count)
         {
-            //var lastSelectedItem = _listView.SelectedItems.Cast<ListViewItem>().Last();
-            var lastSelectedItem = _graph.GetLastSelectedItem()!;
-            int i = _graph.Items.IndexOf(lastSelectedItem);
-            if (i > 0)
-            {
-                _listView.SelectedItems.Clear();
-                _graph.Items[i - 1].Selected = true;
-                _graph.Items[i - 1].EnsureVisible();
-            }
-        }
-        else if (e.KeyCode == Keys.Up)
-        {
-            var firstSelectedItem = _graph.GetFirstSelectedItem()!;
-            int i = _graph.Items.IndexOf(firstSelectedItem);
-            if (i > _graph.ItemsPerRow - 1)
-            {
-                _listView.SelectedItems.Clear();
-                _graph.Items[i - _graph.ItemsPerRow].Selected = true;
-                _graph.Items[i - _graph.ItemsPerRow].EnsureVisible();
-            }
+            _listView.SelectedItems.Clear();
+            _graph.Items[i + _graph.ItemsPerRow].Selected = true;
+            _graph.Items[i + _graph.ItemsPerRow].EnsureVisible();
         }
 
-        e.Handled = handledKeys.Contains(e.KeyCode);
+        else if (e.KeyCode == Keys.Left && i - 1 >= 0)
+        {
+            _listView.SelectedItems.Clear();
+            _graph.Items[i - 1].Selected = true;
+            _graph.Items[i - 1].EnsureVisible();
+        }
+
+        else if (e.KeyCode == Keys.Up && i - _graph.ItemsPerRow >= 0)
+        {
+            _listView.SelectedItems.Clear();
+            _graph.Items[i - _graph.ItemsPerRow].Selected = true;
+            _graph.Items[i - _graph.ItemsPerRow].EnsureVisible();
+        }
+
+        e.Handled = true;
 
     }
 
