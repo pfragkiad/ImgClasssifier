@@ -37,46 +37,37 @@ public class ListViewListItemKeyHandler
     {
         if (_listView.SelectedItems.Count == 0) return;
 
-        HashSet<Keys> handledKeys = new HashSet<Keys> { Keys.Right, Keys.Left, Keys.Up, Keys.Down };
+        HashSet<Keys> handledKeys = [Keys.Right, Keys.Left, Keys.Up, Keys.Down];
         if (!handledKeys.Contains(e.KeyCode)) return;
 
-        if (_graph.Items is null) _graph.Update();
+        //if (_graph.Items is null) _graph.Update();
 
         ListViewItem selected =
             e.KeyCode == Keys.Right || e.KeyCode == Keys.Down ?
             _graph.GetLastSelectedItem()! : _graph.GetFirstSelectedItem()!;
+
         int i = _graph.Items!.IndexOf(selected);
 
-        if (e.KeyCode == Keys.Right && i + 1 < _graph.Items.Count)
+        int nextI =  e.KeyCode switch
         {
-            _listView.SelectedItems.Clear();
-            _graph.Items[i + 1].Selected = true;
-            _graph.Items[i + 1].EnsureVisible();
-        }
-        else if (e.KeyCode == Keys.Down && i + _graph.ItemsPerRow < _graph.Items.Count)
-        {
-            _listView.SelectedItems.Clear();
-            _graph.Items[i + _graph.ItemsPerRow].Selected = true;
-            _graph.Items[i + _graph.ItemsPerRow].EnsureVisible();
-        }
+            Keys.Right when i + 1 < _graph.Items.Count => i+1,
+            Keys.Down when i + _graph.ItemsPerRow < _graph.Items.Count => i + _graph.ItemsPerRow,
+            Keys.Left when i - 1 >= 0 => i - 1,
+            Keys.Up when i - _graph.ItemsPerRow >= 0 => i - _graph.ItemsPerRow,
+            _ => -1
+        };
 
-        else if (e.KeyCode == Keys.Left && i - 1 >= 0)
+        if (nextI>=0)
         {
             _listView.SelectedItems.Clear();
-            _graph.Items[i - 1].Selected = true;
-            _graph.Items[i - 1].EnsureVisible();
-        }
-
-        else if (e.KeyCode == Keys.Up && i - _graph.ItemsPerRow >= 0)
-        {
-            _listView.SelectedItems.Clear();
-            _graph.Items[i - _graph.ItemsPerRow].Selected = true;
-            _graph.Items[i - _graph.ItemsPerRow].EnsureVisible();
+            _graph.Items[nextI].Selected = true;
+            _graph.Items[nextI].EnsureVisible();
         }
 
         e.Handled = true;
-
     }
+
+    #region Unused
 
     ListViewItem? _draggedItem;
     Point? _draggedCurrentPoint;
@@ -116,4 +107,6 @@ public class ListViewListItemKeyHandler
         ItemMoved?.Invoke(this, new ListItemMovedEventArgs(_draggedItem, previous, next));
         _draggedItem = null;
     }
+
+    #endregion
 }
