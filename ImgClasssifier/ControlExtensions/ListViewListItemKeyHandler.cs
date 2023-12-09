@@ -1,13 +1,13 @@
 ﻿namespace ImgClasssifier.ControlExtensions;
 
-public class ListViewListItemDragDropper
+public class ListViewListItemKeyHandler
 {
     private readonly ListView _listView;
 
     private ListItemGraph _graph;
     public ListItemGraph Graph { get => _graph; }
 
-    public ListViewListItemDragDropper(ListView listView)
+    public ListViewListItemKeyHandler(ListView listView)
     {
         _listView = listView;
         _graph = new ListItemGraph(listView);
@@ -16,14 +16,20 @@ public class ListViewListItemDragDropper
         //_listView.MouseMove += ListView_MouseMove;
         //_listView.MouseUp += ListView_MouseUp;
         _listView.KeyDown += ListView_KeyDown;
-        //  _listView.Resize += _listView_Resize;
+
+        _listView.FindForm()!.Load += ListViewListItemKeyHandler_Load;
     }
 
-    private void _listView_Resize(object? sender, EventArgs e)
+    private void ListViewListItemKeyHandler_Load(object? sender, EventArgs e)
     {
-        //  _graph.Update();
+        RefreshGraph();
+        _listView.Resize += ListView_Resize;
     }
 
+    private void ListView_Resize(object? sender, EventArgs e)
+    {
+        RefreshGraph();
+    }
 
     public void RefreshGraph() => _graph?.Update();
 

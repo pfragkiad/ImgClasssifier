@@ -22,29 +22,12 @@ public partial class BrowserForm : Form
 
         _rater = rater;
         _options = options.Value;
-        _listDragDropper = new ListViewListItemDragDropper(listView1);
+        _listKeyHandler = new ListViewListItemKeyHandler(listView1);
         //_listDragDropper.ItemMoved += ListDragDropper_ItemMoved;
 
         toolTip1.SetToolTip(trackBar1, $"{trackBar1.Value}");
         listView1.SelectedIndexChanged += ListView1_SelectedIndexChanged;
 
-    }
-
-    private void ListView1_Resize(object? sender, EventArgs e)
-    {
-
-        _listDragDropper.RefreshGraph();
-    }
-
-    protected override void OnLoad(EventArgs e)
-    {
-        base.OnLoad(e);
-
-        //function works here - the form seems to be visible here!
-        _listDragDropper.RefreshGraph();
-
-        //the event must be added here
-        listView1.Resize += ListView1_Resize;
     }
 
     private void ListView1_SelectedIndexChanged(object? sender, EventArgs e)
@@ -97,7 +80,7 @@ public partial class BrowserForm : Form
         SameRating
     }
 
-    ListViewListItemDragDropper? _listDragDropper;
+    ListViewListItemKeyHandler? _listKeyHandler;
 
     public string? CacheDirectory { get; set; }
 
@@ -123,7 +106,7 @@ public partial class BrowserForm : Form
             listView1.Items[0].Selected = true;
 
         //the function cannot work if the form is invisible
-        if (Visible) _listDragDropper.RefreshGraph();
+        if (Visible) _listKeyHandler.RefreshGraph();
 
         w.Stop();
         if (w.ElapsedMilliseconds > 5000)
@@ -152,7 +135,7 @@ public partial class BrowserForm : Form
         btnChangeRating.Enabled = true;
 
         listView1.Focus();
-        _listDragDropper.RefreshGraph();
+        _listKeyHandler.RefreshGraph();
         StopWaiting();
 
     }
@@ -188,7 +171,7 @@ public partial class BrowserForm : Form
         next.Selected = true;
         next.EnsureVisible();
 
-        _listDragDropper.RefreshGraph();
+        _listKeyHandler.RefreshGraph();
 
 
     }
@@ -333,7 +316,7 @@ public partial class BrowserForm : Form
 
         btnRerateUniformly.Enabled = true;
 
-        _listDragDropper.RefreshGraph();
+        _listKeyHandler.RefreshGraph();
         StopWaiting();
     }
 
