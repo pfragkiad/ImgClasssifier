@@ -2,10 +2,8 @@
 using ImgClasssifier.ControlExtensions;
 using ImagesAdvanced;
 using ImgClasssifier.Rating;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
-using System.Security.Policy;
 
 namespace ImgClasssifier;
 
@@ -29,16 +27,6 @@ public partial class BrowserForm : Form
 
         toolTip1.SetToolTip(trackBar1, $"{trackBar1.Value}");
         listView1.SelectedIndexChanged += ListView1_SelectedIndexChanged;
-    }
-
-    protected override void OnLoad(EventArgs e)
-    {
-        base.OnLoad(e);
-
-        if (listView1.Items.Count == 0) return;
-
-        listView1.Items[0].Selected = true;
-        _listDragDropper.RefreshGraph();
     }
 
     private void ListView1_SelectedIndexChanged(object? sender, EventArgs e)
@@ -111,6 +99,10 @@ public partial class BrowserForm : Form
 
         listView1.AddImageListViewItems(imageList1, ratedImageFiles, rotate, CacheDirectory);
 
+
+        if (listView1.Items.Count > 0)
+            listView1.Items[0].Selected = true;
+
         _listDragDropper.RefreshGraph();
 
         w.Stop();
@@ -138,9 +130,9 @@ public partial class BrowserForm : Form
         ChangeRating(selectedItem, trackBar1.Value, true, null);
 
         btnChangeRating.Enabled = true;
-    
+
         listView1.Focus();
-    _listDragDropper.RefreshGraph();
+        _listDragDropper.RefreshGraph();
         StopWaiting();
 
     }
