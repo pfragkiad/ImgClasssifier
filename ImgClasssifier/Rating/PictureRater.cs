@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using static ImgClasssifier.Images.ImageExtensions;
+using static ImagesAdvanced.ImageExtensions;
 
 namespace ImgClasssifier.Rating;
 

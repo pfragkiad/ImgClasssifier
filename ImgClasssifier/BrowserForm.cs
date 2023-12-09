@@ -1,6 +1,6 @@
 ﻿
 using ImgClasssifier.ControlExtensions;
-using ImgClasssifier.Images;
+using ImagesAdvanced;
 using ImgClasssifier.Rating;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -12,21 +12,33 @@ namespace ImgClasssifier;
 public partial class BrowserForm : Form
 {
     private readonly PictureRater _rater;
-    private readonly BrowserOptions _options;
+    private readonly BrowserOptions2 _options;
 
     public BrowserForm(PictureRater rater,
-        IOptions<BrowserOptions> options)
+        IOptions<BrowserOptions2> options)
     {
         InitializeComponent();
 
         listView1.EnableDoubleBuffering();
+        picPreview.BackgroundImageLayout = ImageLayout.Zoom;
+
         _rater = rater;
         _options = options.Value;
         _listDragDropper = new ListViewListItemDragDropper(listView1);
-        _listDragDropper.ItemMoved += ListDragDropper_ItemMoved;
+        //_listDragDropper.ItemMoved += ListDragDropper_ItemMoved;
 
         toolTip1.SetToolTip(trackBar1, $"{trackBar1.Value}");
         listView1.SelectedIndexChanged += ListView1_SelectedIndexChanged;
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+
+        if (listView1.Items.Count == 0) return;
+
+        listView1.Items[0].Selected = true;
+        _listDragDropper.RefreshGraph();
     }
 
     private void ListView1_SelectedIndexChanged(object? sender, EventArgs e)
@@ -35,6 +47,13 @@ public partial class BrowserForm : Form
 
         var selectedItem = listView1.SelectedItems[0];
         var currentRating = RatingIndex.FromFileName(selectedItem.Text);
+
+        picPreview.BackgroundImage =
+            ImageExtensions.GetUnlockedImageFromFile(
+                Path.Combine(_rater.TargetBasePath!, selectedItem.Text),
+                _options.RotateForBrowsing);
+
+
         trackBar1.Value = currentRating?.Rating ?? 0;
     }
 
@@ -77,7 +96,7 @@ public partial class BrowserForm : Form
     public string? CacheDirectory { get; set; }
 
 
-    //TODO: Fix drag and drop item.
+    //TODO: Fix drag and drop item. (not needed)?
     //TODO: Reload a single photo (right-click)
     public void UpdateBrowser()
     {
@@ -92,23 +111,14 @@ public partial class BrowserForm : Form
 
         listView1.AddImageListViewItems(imageList1, ratedImageFiles, rotate, CacheDirectory);
 
+        _listDragDropper.RefreshGraph();
+
         w.Stop();
         if (w.ElapsedMilliseconds > 5000)
             MessageBox.Show(w.Elapsed.TotalSeconds.ToString());
     }
 
 
-    private void listView1_KeyDown(object sender, KeyEventArgs e)
-    {
-        //if(e.KeyCode ==Keys.Right )
-        //{
-        //    if ((listView1.SelectedItems[0] as ListViewItem)?.FindNearestItem(SearchDirectionHint.Right) is null)
-        //    {
-        //        listView1.SelectedItems.Clear();
-
-        //    }
-        //}
-    }
 
     private void trackBar1_ValueChanged(object sender, EventArgs e)
     {
@@ -121,25 +131,26 @@ public partial class BrowserForm : Form
 
         var selectedItem = listView1.SelectedItems[0];
 
-        Cursor.Current = Cursors.WaitCursor;
-        Application.UseWaitCursor = true;
+        btnChangeRating.Enabled = false;
+        Wait();
 
 
-        ChangeRating(selectedItem, trackBar1.Value, true);
+        ChangeRating(selectedItem, trackBar1.Value, true, null);
 
-        Cursor.Current = Cursors.Default;
-        Application.UseWaitCursor = false;
-
+        btnChangeRating.Enabled = true;
+    
+        listView1.Focus();
+    _listDragDropper.RefreshGraph();
+        StopWaiting();
 
     }
 
-    private void DeleteRatingFile(ListViewItem selectedItem)
+    private void DeleteRatingFile(ListViewItem item)
     {
-        string currentFilename = selectedItem.Text;
+        string currentFilename = item.Text;
 
-        var items = listView1.Items.Cast<ListViewItem>().OrderBy(item => item.Position.Y).ThenBy(item => item.Position.X).ToList();
-        int index = items.IndexOf(selectedItem);
-
+        var items = listView1.GetOrderedListItems().ToList();
+        int index = items.IndexOf(item);
         ListViewItem next = index < items.Count - 1 ? listView1.Items[index + 1] : listView1.Items[index - 1];
 
 
@@ -160,23 +171,26 @@ public partial class BrowserForm : Form
             File.Delete(currentCacheFilePath);
         }
 
-        listView1.Items.Remove(selectedItem);
+        listView1.Items.Remove(item);
 
         next.Selected = true;
         next.EnsureVisible();
 
+        _listDragDropper.RefreshGraph();
+
 
     }
 
-    private void ChangeRating(ListViewItem selectedItem, int newRating, bool refreshBrowser)
+    private void ChangeRating(ListViewItem item, int newRating, bool refreshBrowser, int? newIndex)
     {
-        string currentFilename = selectedItem.Text;
+        string currentFilename = item.Text;
 
         var currentRating = RatingIndex.FromFileName(currentFilename);
         if (currentRating is null) return;
-        if (currentRating.Rating == trackBar1.Value) return; //no update
+        if (currentRating.Rating == newRating && (newIndex is null
+            || newIndex == currentRating.Index)) return; //no update
 
-        UnratedRatedFile newRatedFile = _rater.ChangeRatingAndGetNewRatedFile(currentFilename, newRating);
+        UnratedRatedFile newRatedFile = _rater.ChangeRatingAndGetNewRatedFile(currentFilename, newRating, newIndex);
 
         //remove cache file
         if (Directory.Exists(CacheDirectory))
@@ -194,21 +208,121 @@ public partial class BrowserForm : Form
             File.Move(currentCacheFilePath, Path.Combine(CacheDirectory, newCachedFile));
         }
 
+        string nextRatedFilename = "";
+        if (!chkMoveAfterChangeRating.Checked)
+        {
+            List<ListViewItem> items = listView1.GetOrderedListItems().ToList();
+            int index = items.IndexOf(item);
+            ListViewItem next = index < items.Count - 1 ? listView1.Items[index + 1] : listView1.Items[index - 1];
+            nextRatedFilename = next.Text;
+        }
+
+
         if (!refreshBrowser)
-            //update listitem text only
-            selectedItem.Text = newRatedFile.RatedFilename;
+        { //update listitem text only
+            item.Text = newRatedFile.RatedFilename;
+            item.EnsureVisible();
+        }
         else
         {
-            UpdateBrowser(); //review this
-            var updatedListItem = listView1.Items.Cast<ListViewItem>().First(item => item.Text == newRatedFile.RatedFilename);
-            updatedListItem.Selected = true;
-            updatedListItem.EnsureVisible();
+            UpdateBrowser();
+            if (chkMoveAfterChangeRating.Checked)
+            {
+                var updatedListItem = listView1.Items.Cast<ListViewItem>().First(item => item.Text == newRatedFile.RatedFilename);
+                updatedListItem.Selected = true;
+                updatedListItem.EnsureVisible();
+            }
+            else
+            {
+                var nextListItem = listView1.Items.Cast<ListViewItem>().First(item => item.Text == nextRatedFilename);
+                nextListItem.Selected = true;
+                nextListItem.EnsureVisible();
+
+            }
         }
     }
 
     private void btnRerateUniformly_Click(object sender, EventArgs e)
     {
+        Wait();
 
+        btnRerateUniformly.Enabled = false;
+
+        trackBar1.ValueChanged -= trackBar1_ValueChanged;
+
+        //listView1.BeginUpdate();
+
+        List<ListViewItem> items = listView1.GetOrderedListItems().ToList();
+        int count = items.Count;
+        int countsPerGroup = count / 100 + 1;
+
+        int currentRating = 100;
+        int indexInGroup = countsPerGroup;
+
+        listView1.BeginUpdate();
+
+        progressBar1.Maximum = count;
+        progressBar1.Minimum = 0;
+        progressBar1.Value = 0;
+        progressBar1.Visible = true;
+
+
+
+        //first pass set the rating
+        for (int i = items.Count - 1; i >= 0; i--)
+        {
+            if (indexInGroup == 0)
+            {
+                indexInGroup = countsPerGroup;
+                currentRating--;
+            }
+
+            //temporarily use +200 range (to allow re-indexing without conflicts)
+            ChangeRating(items[i], currentRating + 200, false, indexInGroup);
+
+            indexInGroup--;
+
+            if (i % 10 == 0)
+            {
+                progressBar1.Value = items.Count - i;
+                progressBar1.Refresh();
+            }
+
+
+        }
+
+        progressBar1.Hide();
+
+
+        progressBar1.Value = 0;
+        progressBar1.Visible = true;
+
+
+        //second pass reset the rating back to the [0,100] range 
+        for (int i = items.Count - 1; i >= 0; i--)
+        {
+            var ratingIndex = RatingIndex.FromFileName(items[i].Text)!;
+            ChangeRating(items[i], ratingIndex.Rating - 200, false, ratingIndex.Index);
+
+            if (i % 10 == 0)
+            {
+                progressBar1.Value = items.Count - i;
+                progressBar1.Refresh();
+            }
+        }
+
+
+        progressBar1.Hide();
+
+        trackBar1.ValueChanged += trackBar1_ValueChanged;
+        UpdateBrowser();
+
+        listView1.EndUpdate();
+
+        btnRerateUniformly.Enabled = true;
+
+        _listDragDropper.RefreshGraph();
+        StopWaiting();
     }
 
     private void btnDelete_Click(object sender, EventArgs e)
@@ -216,10 +330,10 @@ public partial class BrowserForm : Form
         if (listView1.SelectedItems.Count == 0) return;
         var selectedItem = listView1.SelectedItems[0];
 
-        var reply = MessageBox.Show($"Are you sure you want to delete {selectedItem.Text}?", "PictureRater",MessageBoxButtons.YesNo);
+        var reply = MessageBox.Show($"Are you sure you want to delete {selectedItem.Text}?", "PictureRater", MessageBoxButtons.YesNo);
         if (reply == DialogResult.No) return;
 
         DeleteRatingFile(selectedItem);
-        
+
     }
 }

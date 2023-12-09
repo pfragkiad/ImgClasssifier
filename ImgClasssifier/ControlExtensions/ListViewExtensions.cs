@@ -1,4 +1,4 @@
-﻿using ImgClasssifier.Images;
+﻿using ImagesAdvanced;
 using static System.Windows.Forms.AxHost;
 using System.Diagnostics;
 using System.Windows.Forms;
@@ -40,5 +40,12 @@ public static class ListViewExtensions
         listView.Items.AddRange(listViewItems);
         listView.EndUpdate();
     }
+
+    public static IEnumerable<ListViewItem> GetOrderedListItems(this ListView listView) =>
+        listView.Items
+        .Cast<ListViewItem>()
+        .OrderBy(item => item.Position.Y)
+        .ThenBy(item => item.Position.X);
+
 
 }

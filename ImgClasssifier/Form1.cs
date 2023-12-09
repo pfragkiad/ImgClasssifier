@@ -1,12 +1,13 @@
-using ImgClasssifier.Images;
+using ImagesAdvanced;
 using ImgClasssifier.Rating;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ImgClasssifier;
 
-//TODO: Remove rated photo.
-//TODO: Reclassify (change all ratings) -> 
-//TODO: Reclassify (compare mode).
+
+
+//ADD viewer with rotate caching
+//Fix GUI
 
 public partial class Form1 : Form
 {

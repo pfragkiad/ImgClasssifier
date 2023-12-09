@@ -12,11 +12,20 @@ public class ListViewListItemDragDropper
         _listView = listView;
         _graph = new ListItemGraph(listView);
 
-        _listView.MouseDown += ListView_MouseDown;
-        _listView.MouseMove += ListView_MouseMove;
-        _listView.MouseUp += ListView_MouseUp;
+        //_listView.MouseDown += ListView_MouseDown;
+        //_listView.MouseMove += ListView_MouseMove;
+        //_listView.MouseUp += ListView_MouseUp;
         _listView.KeyDown += ListView_KeyDown;
+      //  _listView.Resize += _listView_Resize;
     }
+
+    private void _listView_Resize(object? sender, EventArgs e)
+    {
+      //  _graph.Update();
+    }
+
+
+    public void RefreshGraph() => _graph?.Update();
 
     private void ListView_KeyDown(object? sender, KeyEventArgs e)
     {
@@ -52,6 +61,7 @@ public class ListViewListItemDragDropper
 
             e.Handled = true;
         }
+        
     }
 
     ListViewItem? _draggedItem;

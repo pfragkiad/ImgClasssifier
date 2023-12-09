@@ -1,4 +1,4 @@
-﻿using ImgClasssifier.Images;
+﻿using ImagesAdvanced;
 
 namespace ImgClasssifier.ControlExtensions;
 

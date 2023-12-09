@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImgClasssifier", "ImgClasssifier\ImgClasssifier.csproj", "{E0BDEA70-F774-4AB9-AD49-79D548CB7A0E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImgClasssifier", "ImgClasssifier\ImgClasssifier.csproj", "{E0BDEA70-F774-4AB9-AD49-79D548CB7A0E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImagesAdvanced", "..\ImagesAdvancedApp\ImagesAdvanced\ImagesAdvanced.csproj", "{EEA3EB9A-CC26-4CC6-A8D3-6765D0EAF883}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{E0BDEA70-F774-4AB9-AD49-79D548CB7A0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E0BDEA70-F774-4AB9-AD49-79D548CB7A0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E0BDEA70-F774-4AB9-AD49-79D548CB7A0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EEA3EB9A-CC26-4CC6-A8D3-6765D0EAF883}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEA3EB9A-CC26-4CC6-A8D3-6765D0EAF883}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEA3EB9A-CC26-4CC6-A8D3-6765D0EAF883}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEA3EB9A-CC26-4CC6-A8D3-6765D0EAF883}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

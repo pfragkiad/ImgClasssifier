@@ -21,7 +21,7 @@ internal static class Program
             {
                 services
                 .AddSingleton<Form1>()
-                .Configure<BrowserOptions>(context.Configuration.GetSection("browser"))
+                .Configure<BrowserOptions2>(context.Configuration.GetSection("browser"))
                 .AddTransient<BrowserForm>()
 
                 .AddSingleton<PictureRater>()

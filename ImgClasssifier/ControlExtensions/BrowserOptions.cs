@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ImgClasssifier.ControlExtensions;
 
-public class BrowserOptions
+public class BrowserOptions2
 {
     public RotateFlipType RotateForBrowsing { get; set; } = RotateFlipType.RotateNoneFlipNone;
 
