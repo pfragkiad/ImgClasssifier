@@ -24,8 +24,9 @@ public static class ListViewExtensions
         string? cacheDirectory = null
         )
     {
-        listView.Items.Clear();
         listView.BeginUpdate();
+        //should disable the resize event HERE
+        listView.Items.Clear();
 
         int thumbnailWidth = imageList.ImageSize.Width;
         int thumbnailHeight = imageList.ImageSize.Height;

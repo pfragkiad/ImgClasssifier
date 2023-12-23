@@ -17,23 +17,28 @@ public class ListItemGraph
     {
         //  if (_listView.Items.Count == 0) return;
 
-            Items = _listView.Items.Cast<ListViewItem>().OrderBy(item => item.Position.Y).ThenBy(item => item.Position.X).ToList();
+        //in a clear event the items are becoming null and the resize event is called that can call the update!
+        Items = _listView.Items.Cast<ListViewItem>().Where(item => item is not null).ToList();
+        if (Items.Count == 0) return;
 
-            _rows = Items.Select(item => item.Position.Y).Distinct().Count();
-            _itemsPerRow = Items.Select(item => item.Position.X).Distinct().Count();
+        Items = Items.OrderBy(item => item.Position.Y).ThenBy(item => item.Position.X).ToList();
+
+        _rows = Items.Select(item => item.Position.Y).Distinct().Count();
+        _itemsPerRow = Items.Select(item => item.Position.X).Distinct().Count();
     }
 
     public ListViewItem? GetLastSelectedItem()
     {
         var selectedItems = _listView.SelectedItems.Cast<ListViewItem>().ToList();
-        if(selectedItems.Count==0)  return null;    
+        if (selectedItems.Count == 0) return null;
 
         var lastSelectedItem = selectedItems[0];
         var lastPosition = lastSelectedItem.Position;
 
-        for(int i=1; i<selectedItems.Count; i++) {
+        for (int i = 1; i < selectedItems.Count; i++)
+        {
             var position = selectedItems[i].Position;
-            if(position.Y*1000+position.X > lastPosition.Y * 1000 + lastPosition.X)
+            if (position.Y * 1000 + position.X > lastPosition.Y * 1000 + lastPosition.X)
             {
                 lastSelectedItem = selectedItems[i];
                 lastPosition = position;
@@ -44,9 +49,9 @@ public class ListItemGraph
 
     public ListViewItem? GetFirstSelectedItem()
     {
-        var selectedItems = _listView.SelectedItems.Cast<ListViewItem>().ToList(); 
+        var selectedItems = _listView.SelectedItems.Cast<ListViewItem>().ToList();
         if (selectedItems.Count == 0) return null;
-        
+
         var firstSelectedItem = selectedItems[0];
         var firstPosition = firstSelectedItem.Position;
 

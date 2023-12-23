@@ -99,7 +99,9 @@ public partial class BrowserForm : Form
 
         Stopwatch w = Stopwatch.StartNew();
 
+        _listKeyHandler!.DisableResizeHandler(); //this is needed to avoid calling refresh graph internally
         listView1.AddImageListViewItems(imageList1, ratedImageFiles, rotate, CacheDirectory);
+        _listKeyHandler.EnableResizeHandler();
 
 
         if (listView1.Items.Count > 0)

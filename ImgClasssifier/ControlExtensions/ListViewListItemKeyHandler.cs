@@ -28,8 +28,21 @@ public class ListViewListItemKeyHandler
 
     private void ListView_Resize(object? sender, EventArgs e)
     {
+        if(!_resizeHandlerEnabled) return;
+
         RefreshGraph();
     }
+
+    bool _resizeHandlerEnabled = false;
+    public void DisableResizeHandler()
+    {
+        _resizeHandlerEnabled = false;
+    }
+    public void EnableResizeHandler()
+    {
+        _resizeHandlerEnabled = true;
+    }
+
 
     public void RefreshGraph() => _graph?.Update();
 
