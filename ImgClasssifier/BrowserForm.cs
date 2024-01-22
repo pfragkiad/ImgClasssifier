@@ -80,7 +80,7 @@ public partial class BrowserForm : Form
         SameRating
     }
 
-    ListViewListItemKeyHandler? _listKeyHandler;
+    ListViewListItemKeyHandler _listKeyHandler;
 
     public string? CacheDirectory { get; set; }
 
@@ -99,9 +99,9 @@ public partial class BrowserForm : Form
 
         Stopwatch w = Stopwatch.StartNew();
 
-        _listKeyHandler!.DisableResizeHandler(); //this is needed to avoid calling refresh graph internally
+        _listKeyHandler!.ResizeHandlerEnabled = false; //this is needed to avoid calling refresh graph internally
         listView1.AddImageListViewItems(imageList1, ratedImageFiles, rotate, CacheDirectory);
-        _listKeyHandler.EnableResizeHandler();
+        _listKeyHandler.ResizeHandlerEnabled = true;
 
 
         if (listView1.Items.Count > 0)

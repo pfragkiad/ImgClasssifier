@@ -11,17 +11,18 @@ public class ListItemGraph
         _listView = listView;
     }
 
-    public List<ListViewItem>? Items { get; private set; }
+    public List<ListViewItem> Items { get; private set; } = [];
 
     public void Update()
     {
         //  if (_listView.Items.Count == 0) return;
-
-        //in a clear event the items are becoming null and the resize event is called that can call the update!
-        Items = _listView.Items.Cast<ListViewItem>().Where(item => item is not null).ToList();
-        if (Items.Count == 0) return;
-
-        Items = Items.OrderBy(item => item.Position.Y).ThenBy(item => item.Position.X).ToList();
+        Items = _listView.GetOrderedListItems().ToList();
+        if(Items.Count==0)
+        {
+            _rows = 0;
+            _itemsPerRow = 0;
+            return;
+        }
 
         _rows = Items.Select(item => item.Position.Y).Distinct().Count();
         _itemsPerRow = Items.Select(item => item.Position.X).Distinct().Count();

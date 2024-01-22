@@ -1,8 +1,4 @@
 ﻿using ImagesAdvanced;
-using static System.Windows.Forms.AxHost;
-using System.Diagnostics;
-using System.Windows.Forms;
-using System.Runtime.CompilerServices;
 
 namespace ImgClasssifier.ControlExtensions;
 
@@ -25,7 +21,7 @@ public static class ListViewExtensions
         )
     {
         listView.BeginUpdate();
-        //should disable the resize event HERE
+        //should DISABLE the resize event HERE
         listView.Items.Clear();
 
         int thumbnailWidth = imageList.ImageSize.Width;
@@ -45,6 +41,7 @@ public static class ListViewExtensions
     public static IEnumerable<ListViewItem> GetOrderedListItems(this ListView listView) =>
         listView.Items
         .Cast<ListViewItem>()
+        .Where(item => item is not null) //the items are null on clearing (!)
         .OrderBy(item => item.Position.Y)
         .ThenBy(item => item.Position.X);
 

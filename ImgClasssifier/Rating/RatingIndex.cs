@@ -4,8 +4,8 @@ namespace ImgClasssifier.Rating;
 
 public class RatingIndex(int rating, int index) : IComparable<RatingIndex>
 {
-    public int Rating { get; } = rating;
-    public int Index { get; } = index;
+    public int Rating => rating;
+    public int Index => index;
 
     public static RatingIndex? FromFileName(string filename)
     {

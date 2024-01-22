@@ -7,6 +7,11 @@ public class ListViewListItemKeyHandler
     private ListItemGraph _graph;
     public ListItemGraph Graph { get => _graph; }
 
+    //Disabling/enabling resize handlers should be called explicitly before clearing list items.
+
+    bool _resizeHandlerEnabled = false;
+   public bool ResizeHandlerEnabled { get => _resizeHandlerEnabled; set => _resizeHandlerEnabled = value; }
+
     public ListViewListItemKeyHandler(ListView listView)
     {
         _listView = listView;
@@ -28,20 +33,12 @@ public class ListViewListItemKeyHandler
 
     private void ListView_Resize(object? sender, EventArgs e)
     {
-        if(!_resizeHandlerEnabled) return;
+        if (!_resizeHandlerEnabled) return;
 
         RefreshGraph();
     }
 
-    bool _resizeHandlerEnabled = false;
-    public void DisableResizeHandler()
-    {
-        _resizeHandlerEnabled = false;
-    }
-    public void EnableResizeHandler()
-    {
-        _resizeHandlerEnabled = true;
-    }
+
 
 
     public void RefreshGraph() => _graph?.Update();
@@ -61,16 +58,16 @@ public class ListViewListItemKeyHandler
 
         int i = _graph.Items!.IndexOf(selected);
 
-        int nextI =  e.KeyCode switch
+        int nextI = e.KeyCode switch
         {
-            Keys.Right when i + 1 < _graph.Items.Count => i+1,
+            Keys.Right when i + 1 < _graph.Items.Count => i + 1,
             Keys.Down when i + _graph.ItemsPerRow < _graph.Items.Count => i + _graph.ItemsPerRow,
             Keys.Left when i - 1 >= 0 => i - 1,
             Keys.Up when i - _graph.ItemsPerRow >= 0 => i - _graph.ItemsPerRow,
             _ => -1
         };
 
-        if (nextI>=0)
+        if (nextI >= 0)
         {
             _listView.SelectedItems.Clear();
             _graph.Items[nextI].Selected = true;
